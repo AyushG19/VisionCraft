@@ -134,6 +134,7 @@ export function createNewText(
     text: text,
     textAlign: textState.alignment,
     type: "text",
+    isSelected: false,
   } as TextType;
 }
 

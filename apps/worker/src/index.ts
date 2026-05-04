@@ -1,9 +1,9 @@
 import { createWorker, initQueue } from "@repo/queue";
 import { processor } from "./processor/processor";
 import { server } from "./server";
-import { port } from "./config";
+import env from "./env";
 
-initQueue(process.env.REDIS_URL!);
+initQueue(env.REDIS_URL);
 const worker = createWorker(processor);
 
 worker.on("completed", (job) => {
@@ -21,8 +21,8 @@ async function shutdown() {
   process.exit(0);
 }
 
-server.listen(port, () => {
-  console.log(`[Worker] server is running on port : ${port}`);
+server.listen(env.PORT, () => {
+  console.log(`[Worker] server is running on port : ${env.PORT}`);
 });
 
 process.on("SIGTERM", shutdown);

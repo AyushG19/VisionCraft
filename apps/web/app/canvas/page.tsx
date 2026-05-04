@@ -16,11 +16,13 @@ import { useEffect } from "react";
 // import { useUser } from "@repo/hooks";
 import { useOnboardingOverlay } from "./hooks/useOnboardingOverlay";
 import { logout } from "app/services/auth.service";
+import UsersCursor from "@workspace/ui/components/ui/UsersCursor";
+import { useUser } from "@repo/hooks";
 
 const Page = () => {
   const { theme, setTheme } = useTheme();
   // useRafLoop({ cursorMap: memberCursor.current });
-  // const { currentUser } = useUser();
+  const { currentUser } = useUser();
   const wb = useSocketWithWhiteboard();
 
   const { loading, result, handleDrawRequest } = useAi(
@@ -92,6 +94,12 @@ const Page = () => {
         ref={wb.canvasRef}
         className="w-full h-full bg-canvas touch-none "
       ></canvas>
+      {wb.users.map(
+        (u) =>
+          u.userId !== currentUser?.userId && (
+            <UsersCursor key={u.userId} {...u} />
+          ),
+      )}
       <SideToolkit
         selectedShape={wb.selectedShape}
         tool={wb.canvasState.toolState.currentTool}
