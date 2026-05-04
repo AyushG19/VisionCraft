@@ -97,7 +97,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
             exit={{ x: "100%" }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             ref={ref}
-            className="absolute right-0 top-0 flex flex-col items-center justify-center h-screen w-screen lg:w-[360px] bg-priamry shadow-primary overflow-hidden outline-1 outline-global-shadow z-40"
+            className="absolute right-0 top-0 flex flex-col items-center justify-center h-dvh w-dvw lg:w-[360px] bg-priamry shadow-primary overflow-hidden outline-1 outline-global-shadow z-40"
           >
             <ChatTop
               handleChatToggle={handleChatToggle}
@@ -175,27 +175,6 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
                 className="h-full p-0 aspect-square  rounded-md cursor-pointer text-primary-contrast hover:bg-accent flex items-center justify-center transition-colors"
               >
                 {isLoading ? (
-                  // <svg
-                  //   xmlns="http://www.w3.org/2000/svg"
-                  //   width="24"
-                  //   height="24"
-                  //   viewBox="0 0 24 24"
-                  //   fill="none"
-                  //   stroke="currentColor"
-                  //   strokeWidth="2"
-                  //   strokeLinecap="round"
-                  //   strokeLinejoin="round"
-                  //   className="animate-spin"
-                  // >
-                  //   <path d="M12 6l0 -3" />
-                  //   <path d="M16.25 7.75l2.15 -2.15" />
-                  //   <path d="M18 12l3 0" />
-                  //   <path d="M16.25 16.25l2.15 2.15" />
-                  //   <path d="M12 18l0 3" />
-                  //   <path d="M7.75 16.25l-2.15 2.15" />
-                  //   <path d="M6 12l-3 0" />
-                  //   <path d="M7.75 7.75l-2.15 -2.15" />
-                  // </svg>
                   <Loader />
                 ) : (
                   <IconAi color={"currentColor"} size={25} stroke={1.6} />

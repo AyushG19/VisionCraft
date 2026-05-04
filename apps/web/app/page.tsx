@@ -21,7 +21,7 @@ export default function Page() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-easy-bg">
+    <div className="relative h-dvh w-dvw bg-easy-bg">
       {/* Decorative dots pattern on the left */}
       <DotsPattern />
 

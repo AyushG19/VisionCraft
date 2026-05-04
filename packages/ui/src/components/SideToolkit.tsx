@@ -70,18 +70,7 @@ export type SideToolkitProps = {
   };
 };
 type StrokeAllowedTypes = ShapeType | LinearType | PencilType;
-// Constants
 
-// const QUICK_COLORS = [
-//   { l: 60, c: 93, h: 354 }, // Red
-//   { l: 84, c: 90, h: 255 }, // Light Purple
-//   { l: 84, c: 73, h: 162 }, // Mint Green
-//   { l: 72, c: 99, h: 44 }, // Yellow
-//   { l: 72, c: 92, h: 225 }, // Blue
-//   { l: 80, c: 100, h: 356 }, // Pink
-//   { l: 72, c: 96, h: 164 }, // Cyan
-//   { l: 76, c: 80, h: 257 }, // Purple
-// ];
 const QUICK_COLORS = [
   { l: 0, c: 0, h: 0 },
   { l: 1, c: 0, h: 1 },
@@ -135,19 +124,7 @@ const ColorSwatches = ({
     <div
       className="w-4 h-4 rounded-sm overflow-hidden outline-1 outline-global-shadow relative p-0"
       style={{ background: value }}
-    >
-      {/* <input
-        type="color"
-        value={value}
-        onChange={(e) => {
-          // hex input can't produce a true oklch value, so we approximate
-          // by passing a neutral oklch and letting the parent handle it
-          // For now just log — wire up a hex→oklch util here if you have one
-          console.log("hex picked:", e.target.value);
-        }}
-        className="border-none cursor-pointer p-0"
-      /> */}
-    </div>
+    ></div>
   </>
 );
 
@@ -225,17 +202,12 @@ export const SideToolkit = ({
 }: SideToolkitProps) => {
   const dragState = useRef({ on: false, ox: 0, oy: 0 });
   const [pos, setPos] = useState({ x: 16, y: 80 });
-  const [mobileOpen, setMobileOpen] = useState(false);
-  // const [editorState, setEditorState] =
-  //   useState<SideToolkit>(DEFAULT_STATE);
 
   const activeTool = selectedShape?.type || tool;
 
   // add this useEffect to sync panel state when selectedShape changes
   useEffect(() => {
-    console.log("rerun -------------");
     if (!selectedShape) {
-      console.log("no shape--------------");
       if (isStokeElement(tool)) {
         setEditorState({
           strokeWidth: editorState.strokeWidth,
@@ -417,22 +389,31 @@ export const SideToolkit = ({
   useEffect(() => {
     const onMove = (e: TouchEvent) => {
       if (!dragState.current.on || !panelRef.current) return;
-      const pw = panelRef.current.offsetWidth;
-      const ph = panelRef.current.offsetHeight;
+
+      const el = panelRef.current;
+      const rect = el.getBoundingClientRect();
+
+      // actual scale being applied
+      const scale = rect.width / el.offsetWidth;
+      // with default center origin, the CSS left/top origin is offset inward
+      const visualOffsetX = (el.offsetWidth * (1 - scale)) / 2;
+      const visualOffsetY = (el.offsetHeight * (1 - scale)) / 2;
+
       const x = Math.max(
-        0,
+        -visualOffsetX,
         Math.min(
           e.touches[0]!.clientX - dragState.current.ox,
-          window.innerWidth - pw,
+          window.innerWidth - el.offsetWidth + visualOffsetX,
         ),
       );
       const y = Math.max(
-        0,
+        -visualOffsetY,
         Math.min(
           e.touches[0]!.clientY - dragState.current.oy,
-          window.innerHeight - ph,
+          window.innerHeight - el.offsetHeight + visualOffsetY,
         ),
       );
+
       setPos({ x, y });
     };
     const onEnd = () => (dragState.current.on = false);
@@ -451,7 +432,7 @@ export const SideToolkit = ({
       ref={panelRef}
       onMouseDown={onHandleMouseDown}
       onTouchStart={onHandleTouchStart}
-      className="flex max-w-[250px] flex-col gap-3 items-start justify-center select-none px-2 py-3 absolute bg-primary rounded-lg outline-1 outline-global-shadow shadow-shinyprimary cursor-move touch-none "
+      className="flex scale-70 lg:scale-100 max-w-[250px] flex-col gap-3 items-start justify-center select-none px-2 py-3 absolute bg-primary rounded-lg outline-1 outline-global-shadow shadow-shinyprimary cursor-move touch-none  "
       style={{ top: pos.y, left: pos.x }}
     >
       {/* ── Stroke color ── */}
@@ -593,39 +574,13 @@ export const SideToolkit = ({
           </Button>
         </div>
       )}
-      {/* ── Themes ── */}
-      {/* <div className="flex flex-col gap-1.5 cursor-default">
-        <SectionLabel>themes</SectionLabel>
-        <ThemeSwitcher theme={theme ?? "default"} setTheme={setTheme} />
-      </div> */}
     </div>
   );
 
   return selectedShape ||
-    (activeTool !== "select" &&
-      activeTool !== "hand" &&
-      activeTool !== "color") ? (
-    <>
-      {/* ── Desktop floating panel ── */}
-
-      {/* ── Mobile FAB ── */}
-      {/* <button
-        onClick={() => setMobileOpen((o) => !o)}
-        className="sm:hidden fixed bottom-6 right-6 w-[46px] h-[46px] rounded-full bg-[#7F77DD] border-none text-white text-xl cursor-pointer flex items-center justify-center z-[200] shadow-[0_4px_16px_rgba(127,119,221,0.35)]"
-      >
-        ✦
-      </button> */}
-
-      {/* ── Mobile bottom sheet ── */}
-      {mobileOpen ? (
-        <div className="sm:hidden fixed bottom-20 left-3 right-3 bg-[var(--color-background-primary)] border-[0.5px] border-[var(--color-border-secondary)] rounded-[14px] p-[10px] z-[200] shadow-[0_-4px_24px_rgba(0,0,0,0.10)]">
-          {panelContent}
-        </div>
-      ) : (
-        panelContent
-      )}
-    </>
-  ) : null;
+    (activeTool !== "select" && activeTool !== "hand" && activeTool !== "color")
+    ? panelContent
+    : null;
 };
 
 export default SideToolkit;

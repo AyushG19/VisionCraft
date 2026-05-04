@@ -1092,3 +1092,130 @@ export function drawOnboardingOverlay(canvas: HTMLCanvasElement) {
   ctx.fillText("--- If you like it let me know. --- ", W / 2, H / 2 + 30);
   ctx.restore();
 }
+
+export function drawOnboardingOverlayMobile(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const W = canvas.width; // ~390
+  const H = canvas.height; // ~844
+
+  ctx.fillStyle = "rgba(0,0,0,0.60)";
+  ctx.fillRect(0, 0, W, H);
+
+  const COLOR_ARROW = "rgba(255,255,255,0.5)";
+  const COLOR_TEXT = "rgba(255,255,255,0.95)";
+  const COLOR_DIM = "rgba(255,255,255,0.70)";
+
+  // ── primitives (same as desktop) ────────────────────────────────────────
+
+  function arrow(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    cp1x: number,
+    cp1y: number,
+    cp2x: number,
+    cp2y: number,
+    flip = false,
+  ) {
+    if (!ctx) return;
+    ctx.save();
+    ctx.strokeStyle = COLOR_ARROW;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 4]);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const tx = x2 - cp2x,
+      ty = y2 - cp2y;
+    const len = Math.hypot(tx, ty) || 1;
+    const nx = tx / len,
+      ny = ty / len;
+    const s = flip ? -1 : 1;
+    const hw = 6,
+      hl = 13;
+    ctx.fillStyle = COLOR_ARROW;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - nx * hl + ny * hw * s, y2 - ny * hl - nx * hw * s);
+    ctx.lineTo(x2 - nx * hl - ny * hw * s, y2 - ny * hl + nx * hw * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function label(
+    x: number,
+    y: number,
+    main: string,
+    sub?: string,
+    align: CanvasTextAlign = "center",
+  ) {
+    if (!ctx) return;
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.font = `600 16px 'Segoe UI', system-ui, sans-serif`;
+    ctx.fillStyle = COLOR_TEXT;
+    ctx.fillText(main, x, y);
+    if (sub) {
+      ctx.font = `400 13px 'Segoe UI', system-ui, sans-serif`;
+      ctx.fillStyle = COLOR_DIM;
+      ctx.fillText(sub, x, y + 20);
+    }
+    ctx.restore();
+  }
+
+  // ── draw the actual mobile panels ────────────────────────────────────────
+  // (reuse your existing draw fns — they'll just sit in a smaller canvas)
+  drawOptionsPanel(ctx, W - 148, 200); // adjust x if panel clips
+  drawSideToolkit(ctx, 8, 200); // smaller left margin on mobile
+
+  // ── annotations ──────────────────────────────────────────────────────────
+
+  // Side toolkit — label sits to the right of the panel
+  arrow(
+    130,
+    220, // tail (origin, right of label)
+    20,
+    180, // head (pointing at toolkit)
+    90,
+    180,
+    30,
+    180,
+  );
+  label(145, 215, "Toolkit", "draw tools", "left");
+
+  // Options panel — label sits below-left
+  arrow(
+    W - 170,
+    120, // tail
+    W - 80,
+    55, // head (options panel top-right area)
+    W - 160,
+    60,
+    W - 100,
+    50,
+    true,
+  );
+  label(W - 175, 130, "Options", "rooms · AI · profile", "right");
+
+  // Undo/Redo — bottom-left area (adjust to wherever your button lives)
+  arrow(160, H - 120, 55, H - 60, 120, H - 130, 60, H - 100, true);
+  label(175, H - 128, "Undo / Redo", "Ctrl+Z · Ctrl+Shift+Z", "left");
+
+  // ── dismiss hint ──────────────────────────────────────────────────────────
+  ctx.save();
+  ctx.font = "400 14px 'Segoe UI', system-ui, sans-serif";
+  ctx.fillStyle = COLOR_DIM;
+  ctx.textAlign = "center";
+  ctx.fillText("Tap anywhere to dismiss", W / 2, H / 2 - 10);
+  ctx.font = "400 12px handlee, system-ui, sans-serif";
+  ctx.fillText("— If you like it let me know —", W / 2, H / 2 + 16);
+  ctx.restore();
+}

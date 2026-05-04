@@ -27,7 +27,11 @@ export function useOnboardingOverlay(
     base.parentElement?.appendChild(overlay);
     overlayRef.current = overlay;
 
-    drawOnboardingOverlay(overlay);
+    if (window.innerWidth > 640) {
+      drawOnboardingOverlay(overlay);
+    } else {
+      // drawOnboardingOverlayMobile(overlay);
+    }
 
     const dismiss = () => {
       overlay.remove();

@@ -316,7 +316,7 @@ export const useSocketWithWhiteboard = (): {
         ...shape,
         strokeColor: color,
       };
-      canvasDispatch({ type: "UPD_SHAPE", payload: newShape });
+      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       setSelectedShape(newShape);
       return;
     }
@@ -334,7 +334,7 @@ export const useSocketWithWhiteboard = (): {
         ...shape,
         strokeWidth: size,
       };
-      canvasDispatch({ type: "UPD_SHAPE", payload: newShape });
+      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       setSelectedShape(newShape);
       return;
     }

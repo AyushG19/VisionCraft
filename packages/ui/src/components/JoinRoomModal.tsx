@@ -122,7 +122,7 @@ export default function JoinRoomModal({
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={`
-            flex items-center justify-end w-10 h-10 ${isMenuOpen ? "px-6" : "pr-2"}
+            flex items-center justify-end w-8 h-8 lg:w-10 lg:h-10 ${isMenuOpen ? "px-6" : "pr-2"}
             bg-primary text-primary-contrast rounded-l-xl outline-1 outline-global-shadow cursor-pointer
             transition-all duration-300
             ${isMenuOpen ? "!rounded-bl-none lg:w-full w-32 scale-[103%]" : ""}
@@ -159,7 +159,7 @@ export default function JoinRoomModal({
                     variants={itemVariants}
                     onClick={() => !isTheme && handleAction(opt.id)}
                     className={`
-                      flex items-center ${isTheme ? "flex-col items-end" : "justify-end"} w-32 lg:w-full lg:h-auto h-10 py-3 px-6
+                      flex items-center ${isTheme ? "flex-col items-end" : "justify-end"} w-32 lg:w-full h-auto py-2 lg:py-3 lg:px-6 px-4
                       ${(opt.id === "exit-room" || opt.id === "logout") && "hover:bg-red text-global-shadow"} bg-secondary text-secondary-contrast text-xs
                      border-b border-black/10 last:border-b-0
                       last:rounded-bl-xl hover:bg-primary hover:text-primary-contrast
@@ -175,7 +175,7 @@ export default function JoinRoomModal({
                       </>
                     ) : (
                       <>
-                        <p className={`mr-1.5 capitalize`}>
+                        <p className={`mr-1.5 capitalize text-xs lg:text-base`}>
                           {opt.id === "ai-chat" && isChatOpen
                             ? "close chat"
                             : opt.label}

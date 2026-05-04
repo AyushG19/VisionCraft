@@ -16,8 +16,6 @@ import { useEffect } from "react";
 // import { useUser } from "@repo/hooks";
 import { useOnboardingOverlay } from "./hooks/useOnboardingOverlay";
 import { logout } from "app/services/auth.service";
-import { leaveRoom } from "app/api/canvas.api";
-import { leaveRoomService } from "app/services/canvas.service";
 
 const Page = () => {
   const { theme, setTheme } = useTheme();
@@ -77,7 +75,7 @@ const Page = () => {
   };
 
   return (
-    <div className={`relative h-screen w-screen duration-300 touch-none`}>
+    <div className={`relative h-dvh w-dvw overflow-hidden touch-none`}>
       <Toolkit {...toolkitProps} />
       {wb.textEdit && (
         <TextArea

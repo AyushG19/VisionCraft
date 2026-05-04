@@ -10,14 +10,12 @@ console.log("running this in : ", process.env.NODE_ENV, " mode.");
 const envInput = {
   NODE_ENV: process.env.NODE_ENV,
 
-  HTTP_BACKEND_URL:
-    process.env.NEXT_PUBLIC_HTTP_BACKEND_URL ?? "http://localhost:4000",
+  HTTP_BACKEND_URL: process.env.NEXT_PUBLIC_HTTP_BACKEND_URL,
 
-  WS_BACKEND_URL:
-    process.env.NEXT_PUBLIC_WS_BACKEND_URL ?? "ws://localhost:3001",
+  WS_BACKEND_URL: process.env.NEXT_PUBLIC_WS_BACKEND_URL,
 
-  WORKER_BACKEND_URL:
-    process.env.NEXT_PUBLIC_WORKER_BACKEND_URL ?? "http://localhost:3002",
+  WORKER_BACKEND_URL: process.env.NEXT_PUBLIC_WORKER_BACKEND_URL,
+
   CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUD_NAME,
 };
 

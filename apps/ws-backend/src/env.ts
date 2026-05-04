@@ -5,8 +5,8 @@ function shutdown(code: number): never {
   process.exit(code);
 }
 const envSchema = {
-  NODE_ENV: process.env.NODE_ENV ?? "development",
-  PORT: process.env.PORT ? Number(process.env.PORT) : 3001,
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: Number(process.env.PORT),
   JWT_SECRET: process.env.JWT_SECRET,
   BCRYPT_SALT: process.env.BCRYPT_SALT,
   HOST: process.env.HOST,
