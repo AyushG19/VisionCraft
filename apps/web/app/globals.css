@@ -339,7 +339,7 @@
 
   --shadow-shinyshadow-pressed: inset 1px 1px var(--color-global-shadow);
 
-  --font-Google-Sans-Code: "Google Sans Code", ui-monospace, monospace;
+  --font-google-sans-code: "Google Sans Code", ui-monospace, monospace;
   --font-krona-one: "Krona One", sans-serif;
   --font-handlee: "Handlee", cursive;
 }

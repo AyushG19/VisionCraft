@@ -71,7 +71,7 @@ const ChatTop = ({
             Name
           </div> */}
         <div
-          className="flex relative gap-1 mt-4 items-center justify-center  hover:bg-secondary bg-primary-700 text-global-shadow transition-colors px-2.5 -ml-2 py-0.5 cursor-pointer rounded-md font-Google-Sans-Code before:font-sans font-light text-xl before:content-['Code'] before:absolute before:-top-4 before:left-1 before:text-[10px] before:font-medium "
+          className="flex relative gap-1 mt-4 items-center justify-center  hover:bg-secondary bg-primary-700 text-global-shadow transition-colors px-2.5 -ml-2 py-0.5 cursor-pointer rounded-md font-google-sans-code before:font-sans font-light text-xl before:content-['Code'] before:absolute before:-top-4 before:left-1 before:text-[10px] before:font-medium "
           onClick={handleCopy}
           style={{
             letterSpacing: ".04em",

@@ -13,12 +13,16 @@ import { ErrorModal } from "@workspace/ui/components/ErrorModal";
 import { useTheme } from "next-themes";
 import { DrawElement } from "@repo/common";
 import { useEffect } from "react";
-import { useUser } from "@repo/hooks";
+// import { useUser } from "@repo/hooks";
+import { useOnboardingOverlay } from "./hooks/useOnboardingOverlay";
+import { logout } from "app/services/auth.service";
+import { leaveRoom } from "app/api/canvas.api";
+import { leaveRoomService } from "app/services/canvas.service";
 
 const Page = () => {
   const { theme, setTheme } = useTheme();
   // useRafLoop({ cursorMap: memberCursor.current });
-  const { currentUser } = useUser();
+  // const { currentUser } = useUser();
   const wb = useSocketWithWhiteboard();
 
   const { loading, result, handleDrawRequest } = useAi(
@@ -39,6 +43,8 @@ const Page = () => {
   const handleChatToggle = () => {
     wb.setIsOpen((prev) => !prev);
   };
+
+  useOnboardingOverlay(wb.canvasRef);
 
   useEffect(() => {
     if (!wb.canvasRef.current) return;
@@ -73,7 +79,6 @@ const Page = () => {
   return (
     <div className={`relative h-screen w-screen duration-300 touch-none`}>
       <Toolkit {...toolkitProps} />
-
       {wb.textEdit && (
         <TextArea
           textAreaRef={wb.textAreaRef}
@@ -144,8 +149,8 @@ const Page = () => {
           onChatToggle={handleChatToggle}
           isChatOpen={wb.isOpen}
           setTheme={setTheme}
-          onExitRoom={() => {}}
-          onLogout={() => {}}
+          onExitRoom={wb.handleLeaveRoom}
+          onLogout={logout}
           inRoom={wb.inRoom}
         />
 

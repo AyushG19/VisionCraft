@@ -12,3 +12,7 @@ export async function signupApi(signupData: SignupFormType): Promise<UserType> {
   const res = await axiosInstance.post("/api/auth/signup", signupData);
   return res.data;
 }
+
+export async function logoutApi(): Promise<void> {
+  const res = await axiosInstance.post("/api/auth/logout");
+}

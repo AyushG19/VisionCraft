@@ -29,6 +29,7 @@ import { measureText } from "../helper/canvas.helper";
 const useCanvasInteraction = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   inputRef: React.RefObject<HTMLInputElement | null>,
+  textAreaRef: React.RefObject<HTMLTextAreaElement | null>,
   canvasState: CanvasState,
   canvasDispatch: (action: Action) => void,
   dispatchWithSocket: (action: Action) => void,
@@ -114,9 +115,10 @@ const useCanvasInteraction = (
   useEffect(() => {
     const tool = canvasState.toolState.currentTool;
 
-    if (tool === "image") {
-      inputRef.current?.click();
-    }
+    // if (tool === "image") {
+    //   inputRef.current?.click();
+    //   inputRef.current?.blur();
+    // }
     cursor.updateCursor(
       tool,
       screenToWorld(0, 0, camera),
@@ -159,7 +161,7 @@ const useCanvasInteraction = (
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (inputRef.current) return;
+      if (textAreaRef.current) return;
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedShapeRef.current
@@ -214,7 +216,7 @@ const useCanvasInteraction = (
       }
 
       if (e.key === "c") {
-        canvasDispatch({ type: "CHANGE_TOOL", payload: "image" });
+        inputRef.current?.click();
       }
 
       if (e.key === "v") {
@@ -287,6 +289,7 @@ const useCanvasInteraction = (
         setSelectedShape(newSelected);
       } else if (tool === "text") {
         e.preventDefault();
+        textAreaRef.current?.blur();
         setTextEdit(() => ({
           elementId: "1",
           text: "",

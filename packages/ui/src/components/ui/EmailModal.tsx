@@ -67,7 +67,7 @@ const EmailModal = ({
             label: "name",
             state: name,
             setState: setName,
-            placeholder: "skibidi toilet",
+            placeholder: "john doe",
           },
         ]
       : [

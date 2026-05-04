@@ -106,3 +106,9 @@ export const refreshToken = async (req: Request, res: Response) => {
     throw new AppError(500, "Internal server error");
   }
 };
+
+export async function logout(req: Request, res: Response): Promise<void> {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.json("Logout sucessful");
+}

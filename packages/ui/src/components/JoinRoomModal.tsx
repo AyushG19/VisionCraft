@@ -113,7 +113,7 @@ export default function JoinRoomModal({
       <div
         ref={menuRef}
         className={`
-          fixed right-0 top-14 lg:top-6 z-40 flex flex-col items-end font-Google-Sans-Code
+          fixed right-0 top-14 lg:top-6 z-40 flex flex-col items-end font-google-sans-code
           transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${isChatOpen ? " lg:-translate-x-[360px]" : "translate-x-0"}
         `}

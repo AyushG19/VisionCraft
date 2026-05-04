@@ -39,7 +39,6 @@ import {
   joinRoomService,
 } from "app/services/canvas.service";
 import { RoomInfo, useSocketContext } from "@repo/hooks";
-import useMousePosition from "./useMousePosition";
 import {
   generateUserObject,
   incomingSocketHandlers,
@@ -126,8 +125,6 @@ export const useSocketWithWhiteboard = (): {
   // Add these two refs near your other refs
   const drawnShapesRef = useRef(canvasState.drawnShapes);
   // const cameraRef = useRef(camera);
-
-  const { getScreenCoordinates } = useMousePosition(canvasRef);
 
   const setTextState = (partial: Partial<TextStateType>) => {
     canvasDispatch({ type: "UPD_TEXT_STATE", payload: partial });
@@ -257,6 +254,7 @@ export const useSocketWithWhiteboard = (): {
   } = useCanvasInteraction(
     canvasRef,
     inputRef,
+    textAreaRef,
     canvasState,
     canvasDispatch,
     dispatchWithSocket,

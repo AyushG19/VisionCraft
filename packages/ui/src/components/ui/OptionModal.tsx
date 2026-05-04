@@ -20,7 +20,7 @@ const OptionModal = ({
         {OPTIONS.map((ob, i) => (
           <li
             key={ob.name}
-            className={`px-4 py-2 font-semibold font-Google-Sans-Code even:bg-primary-700 hover:bg-secondary transition-colors ease-in-out duration-200 cursor-pointer capitalize flex justify-between gap-3 hover:bg-light_sky_blue-700 rounded-md `}
+            className={`px-4 py-2 font-semibold font-google-sans-code even:bg-primary-700 hover:bg-secondary transition-colors ease-in-out duration-200 cursor-pointer capitalize flex justify-between gap-3 hover:bg-light_sky_blue-700 rounded-md `}
             onClick={() => handleOptionSelect(ob.name)}
           >
             /{ob.name}

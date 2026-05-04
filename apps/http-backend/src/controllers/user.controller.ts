@@ -1,8 +1,9 @@
+import { UserType } from "@repo/common";
 import { AppError } from "../error";
 import { findUserInfoWithId } from "@repo/db";
 import { Request, Response } from "express";
 
-export async function getUserInfo(req: Request, res: Response) {
+export async function getUserInfo(req: Request, res: Response): Promise<void> {
   const { userId } = req.body;
   if (!userId) throw new AppError(401, "User ID not valid or missing.");
 

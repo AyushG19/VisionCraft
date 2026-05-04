@@ -1,5 +1,5 @@
 import { LoginFormType, SignupFormType, User, UserType } from "@repo/common";
-import { loginApi, signupApi } from "app/api/auth.api";
+import { loginApi, logoutApi, signupApi } from "app/api/auth.api";
 import { AppError } from "app/api/error";
 
 export const loginService = async (
@@ -25,4 +25,8 @@ export const signupService = async (
     throw new AppError("Invalid Response from server", "SERVER_ERROR");
   }
   return parsedData.data;
+};
+
+export const logout = async () => {
+  await logoutApi();
 };

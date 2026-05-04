@@ -119,7 +119,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
           onClick={() => toggleFunction()}
           size={"sm"}
           variant={"iconic"}
-          className=" font-Google-Sans-Code font-light bg-red outline-1 outline-global-shadow shadow-pressed w-20 rounded-sm  button-press-active capitalize h-full group"
+          className=" font-google-sans-code font-light bg-red outline-1 outline-global-shadow shadow-pressed w-20 rounded-sm  button-press-active capitalize h-full group"
         >
           <p className="group-active:translate-x-0.5 group-active:translate-y-0.5 ">
             cancel
@@ -129,7 +129,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
         <Button
           onClick={() => handlePaste()}
           variant={"iconic"}
-          className="outline-1 h-auto font-Google-Sans-Code font-light outline-global-shadow bg-accent shadow-pressed flex flex-1 text-sm items-center justify-center px-2 rounded-sm capitalize  button-press-active cursor-pointer group"
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-accent shadow-pressed flex flex-1 text-sm items-center justify-center px-2 rounded-sm capitalize  button-press-active cursor-pointer group"
         >
           <p className="group-active:translate-x-0.5 group-active:translate-y-0.5 ">
             paste
@@ -146,7 +146,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
           size={"sm"}
           disabled={!code[3]}
           variant={"iconic"}
-          className={`in-disabled:cursor-not-allowed bg-secondary font-Google-Sans-Code font-light shadow-pressed rounded-sm w-20 capitalize h-full button-press-active text-secondary-contrast group`}
+          className={`in-disabled:cursor-not-allowed bg-secondary font-google-sans-code font-light shadow-pressed rounded-sm w-20 capitalize h-full button-press-active text-secondary-contrast group`}
         >
           <p className="group-active:translate-x-0.5 group-active:translate-y-0.5 ">
             {isLoading ? "wait..." : "join"}
