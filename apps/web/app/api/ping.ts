@@ -1,5 +1,5 @@
 import axios from "axios";
-import { env } from "config";
+import { env } from "@/config";
 
 async function ping(URL: string) {
   await axios.get(URL, {

@@ -1,5 +1,5 @@
 import { DrawElement, PointType, ShapeType } from "@repo/common";
-import { Bounds, getHandles, HandleName } from "app/lib/getHandles";
+import { Bounds, getHandles, HandleName } from "@/lib/getHandles";
 
 // Helper function to check if point is near a line segment
 const isPointNearLine = (

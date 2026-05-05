@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { env } from "../../../config";
+import { env } from "@/config";
 import { SendPropsType } from "../types";
 import { useError, useSocketContext } from "@repo/hooks";
 import { ServerSocketData, ServerSocketDataType } from "@repo/common";

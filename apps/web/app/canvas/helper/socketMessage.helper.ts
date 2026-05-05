@@ -5,11 +5,11 @@ import {
   PointType,
   DrawElement,
 } from "@repo/common";
-import { Action } from "app/canvas/types";
+import { Action } from "@/canvas/types";
 import React from "react";
 import { getUserColor } from "./color.helper";
 import { RoomInfo } from "@repo/hooks";
-import { getUserInfo } from "app/services/user.service";
+import { getUserInfo } from "@/services/user.service";
 
 export const generateUserObject = (user: UserType) => {
   return {

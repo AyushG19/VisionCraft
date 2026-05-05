@@ -9,7 +9,7 @@ import {
 } from "@workspace/ui/index";
 import { loginService, signupService } from "./services/auth.service";
 import { useRouter } from "next/navigation";
-import { env } from "config";
+import { env } from "@/config";
 
 export default function Page() {
   const router = useRouter();

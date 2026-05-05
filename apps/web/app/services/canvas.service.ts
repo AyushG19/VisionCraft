@@ -1,18 +1,23 @@
 import { JoinRoomResponseType, newRoom } from "@repo/common";
-import { createRoom, joinRoom, leaveRoom, uploadImg } from "app/api/canvas.api";
+import {
+  createRoomApi,
+  joinRoomApi,
+  leaveRoomApi,
+  uploadImgApi,
+} from "@/api/canvas.api";
 
 export async function joinRoomService(
   roomCode: string,
 ): Promise<JoinRoomResponseType> {
-  return await joinRoom(roomCode);
+  return await joinRoomApi(roomCode);
 }
 
 export async function createRoomService(): Promise<newRoom> {
-  return await createRoom();
+  return await createRoomApi();
 }
 
 export async function leaveRoomService(roomId: string) {
-  return await leaveRoom(roomId);
+  return await leaveRoomApi(roomId);
 }
 
 export async function storeImg(imageBlob: Blob): Promise<string> {
@@ -24,6 +29,6 @@ export async function storeImg(imageBlob: Blob): Promise<string> {
   for (const [key, value] of formData.entries()) {
     console.log("FormData key:", key, "value:", value);
   }
-  const res = await uploadImg(formData);
+  const res = await uploadImgApi(formData);
   return res.secure_url as string;
 }

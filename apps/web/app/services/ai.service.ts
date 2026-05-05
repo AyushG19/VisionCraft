@@ -1,6 +1,6 @@
 import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 import { MermaidToExcalidrawResult } from "@excalidraw/mermaid-to-excalidraw/dist/interfaces";
-import { fetchMermaidPrompt } from "app/api/ai.api";
+import { fetchMermaidPrompt } from "@/api/ai.api";
 
 export async function getExcalidrawElements(
   userPrompt: string,

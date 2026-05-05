@@ -15,14 +15,15 @@ import { DrawElement } from "@repo/common";
 import { useEffect } from "react";
 // import { useUser } from "@repo/hooks";
 import { useOnboardingOverlay } from "./hooks/useOnboardingOverlay";
-import { logout } from "app/services/auth.service";
+import { logout } from "@/services/auth.service";
 import UsersCursor from "@workspace/ui/components/ui/UsersCursor";
 import { useUser } from "@repo/hooks";
+import { getProfile } from "@/services/user.service";
 
 const Page = () => {
   const { theme, setTheme } = useTheme();
   // useRafLoop({ cursorMap: memberCursor.current });
-  const { currentUser } = useUser();
+  const { currentUser, setCurrentUser } = useUser();
   const wb = useSocketWithWhiteboard();
 
   const { loading, result, handleDrawRequest } = useAi(
@@ -65,6 +66,14 @@ const Page = () => {
       }
     });
   }, [result]);
+
+  useEffect(() => {
+    async function getUserProfile() {
+      const user = await getProfile();
+      setCurrentUser({ avatar: "", ...user });
+    }
+    getUserProfile();
+  }, []);
 
   const toolkitProps: toolkitProps = {
     handleColorSelect: wb.handleColorSelect,

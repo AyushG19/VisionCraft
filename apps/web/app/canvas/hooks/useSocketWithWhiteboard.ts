@@ -34,15 +34,12 @@ import {
   TextType,
 } from "@repo/common";
 import { useCanvasSocket } from "./useCanvasSocket";
-import {
-  createRoomService,
-  joinRoomService,
-} from "app/services/canvas.service";
+import { createRoomService, joinRoomService } from "@/services/canvas.service";
 import { RoomInfo, useSocketContext } from "@repo/hooks";
 import {
   generateUserObject,
   incomingSocketHandlers,
-} from "app/canvas/helper/socketMessage.helper";
+} from "@/canvas/helper/socketMessage.helper";
 import useRafLoop from "./useRafLoop";
 import redrawPreviousShapes from "../utils/redrawPreviousShapes";
 import { debounce } from "../utils/rateLimiting";

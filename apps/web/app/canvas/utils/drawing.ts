@@ -1,6 +1,6 @@
 import oklchToCSS from "../../lib/oklchToCss";
 import { ImageType, PointType, TextType, type DrawElement } from "@repo/common";
-import { drawHandles, drawLabel } from "app/canvas/helper/drawing.helpers";
+import { drawHandles, drawLabel } from "@/canvas/helper/drawing.helpers";
 import { Camera } from "../hooks/useCamera";
 import { imageCache } from "./redrawPreviousShapes";
 import {

@@ -1,8 +1,8 @@
 import { JoinRoomResponseType, newRoom } from "@repo/common";
 import { axiosInstance } from "./axios";
-import { env } from "config";
+import { env } from "@/config";
 
-export const joinRoom = async (
+export const joinRoomApi = async (
   roomCode: string,
 ): Promise<JoinRoomResponseType> => {
   const data = {
@@ -15,17 +15,17 @@ export const joinRoom = async (
   return res.data;
 };
 
-export const createRoom = async (): Promise<newRoom> => {
+export const createRoomApi = async (): Promise<newRoom> => {
   const res = await axiosInstance.post("/api/rooms/create");
   return res.data;
 };
 
-export const leaveRoom = async (roomId: string): Promise<any> => {
+export const leaveRoomApi = async (roomId: string): Promise<any> => {
   const res = await axiosInstance.post("/api/rooms/leave", { roomId: roomId });
   return res.data;
 };
 
-export const uploadImg = async (formData: FormData) => {
+export const uploadImgApi = async (formData: FormData) => {
   const res = await axiosInstance.post(
     `https://api.cloudinary.com/v1_1/${env.CLOUD_NAME}/image/upload`,
     formData,

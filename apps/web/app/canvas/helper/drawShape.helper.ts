@@ -1,5 +1,5 @@
 import { ColorType, PointType, TextType } from "@repo/common";
-import oklchToCSS from "app/lib/oklchToCss";
+import oklchToCSS from "@/lib/oklchToCss";
 import { Point } from "motion";
 
 export const drawSmoothPencilPath = (

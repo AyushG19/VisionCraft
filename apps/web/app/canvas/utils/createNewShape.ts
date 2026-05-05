@@ -11,7 +11,7 @@ import {
   TextType,
   ToolKitType,
 } from "@repo/common";
-import { screenToWorld } from "app/lib/math";
+import { screenToWorld } from "@/lib/math";
 import { Camera } from "../hooks/useCamera";
 import { SideToolKitState } from "../types";
 
