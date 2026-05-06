@@ -75,7 +75,7 @@
     "worker#start": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["REDIS_URL"]
+      "passThroughEnv": ["REDIS_URL", "FRONTEND_URL", "PORT"]
     },
 
     "http-backend#dev": {
