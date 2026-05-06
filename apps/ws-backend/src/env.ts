@@ -1,7 +1,7 @@
 import { wsEnv } from "@repo/common";
 
 function shutdown(code: number): never {
-  console.log("error in env");
+  console.log("[WS] Error in env");
   process.exit(code);
 }
 const envSchema = {
@@ -9,10 +9,7 @@ const envSchema = {
   PORT: Number(process.env.PORT),
   JWT_SECRET: process.env.JWT_SECRET,
   BCRYPT_SALT: process.env.BCRYPT_SALT,
-  HOST: process.env.HOST,
-  REDIS_PASS: process.env.REDIS_PASS,
-  MODEL: process.env.MODEL,
-  GROQ_API_KEY: process.env.GROQ_API_KEY,
+  FRONTEND_URL: process.env.FRONTEND_URL,
   RS_HOST: process.env.RS_HOST,
   RS_PORT: Number(process.env.RS_PORT),
   RS_USERNAME: process.env.RS_USERNAME,
@@ -23,7 +20,7 @@ const envSchema = {
 };
 const parsedEnv = wsEnv.safeParse(envSchema);
 if (!parsedEnv.success) {
-  console.error("ENViRONMENT VALIDATION FAILED!");
+  console.error("[WS] ENViRONMENT VALIDATION FAILED!");
   for (const issue of parsedEnv.error.issues) {
     console.log(`->${issue.path.join(".")} : ${issue.message}`);
   }

@@ -1,10 +1,5 @@
 import { WebSocketServer } from "ws";
-import dotenv from "dotenv";
-import path from "path";
 import type { JwtPayloadType } from "@repo/common";
-
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-
 import { redisPub } from "@repo/redis/dist";
 import {
   validateConnection,
@@ -19,9 +14,28 @@ import { removeUserFromRoomRegistry } from "./room/room.lifecycle";
 import { startIdleSweeper } from "./room/room.sweeper";
 import { sendError, sendInfo } from "./helpers/ws.helper";
 import { handlers } from "./handlers";
+import http from "http";
+import { corsMap } from "./config";
 
-const wss = new WebSocketServer({ port: env.PORT });
-console.log(`[WS] Server listening on port ${env.PORT}`);
+const server = http.createServer((req, res) => {
+  res.setHeaders(corsMap);
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (req.method === "GET" && (req.url === "/ping" || req.url === "/")) {
+    res.writeHead(200, { "content-type": "text/plain" });
+    res.end("Ws server is running");
+    return;
+  }
+  res.writeHead(404);
+  res.end();
+});
+
+const wss = new WebSocketServer({ server });
 
 initQueue(
   `redis://${env.RS_USERNAME}:${env.RS_PASSWORD}@${env.RS_HOST}:${env.RS_PORT}`,
@@ -87,4 +101,8 @@ wss.on("connection", (ws, req) => {
   ws.on("error", (err) => {
     console.error(`[WS] Socket error (user: ${userId}):`, err);
   });
+});
+
+server.listen(env.PORT, "0.0.0.0", () => {
+  console.log(`[WS] server running on port : ${env.PORT}`);
 });
