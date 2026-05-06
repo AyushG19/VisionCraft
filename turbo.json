@@ -51,6 +51,7 @@
         "PORT",
         "JWT_SECRET",
         "BCRYPT_SALT",
+        "FRONTEND_URL",
         "RS_HOST",
         "RS_PORT",
         "RS_USERNAME",
