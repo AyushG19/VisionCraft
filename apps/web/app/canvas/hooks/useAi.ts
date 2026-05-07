@@ -1,14 +1,14 @@
 "use client";
 import { useCallback, useState } from "react";
-import { getExcalidrawElements } from "@/services/ai.service";
+import { getExcalidrawElements } from "../../services/ai.service";
 import {
   AIResultType,
   convertToShapeType,
 } from "@workspace/ui/lib/convertToShapeType";
 import { useError } from "@repo/hooks";
-import { getScalingFactor } from "@/canvas/helper/scaling.helper";
+import { getScalingFactor } from "../../canvas/helper/scaling.helper";
 import { Action } from "../types";
-import { screenToWorld } from "@/lib/math";
+import { screenToWorld } from "../../lib/math";
 import { Camera } from "./useCamera";
 
 const useAi = (

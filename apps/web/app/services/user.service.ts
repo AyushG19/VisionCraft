@@ -1,5 +1,5 @@
-import { AppError } from "@/api/error";
-import { fetchUserInfoApi, fetchProfileApi } from "@/api/user.api";
+import { AppError } from "../api/error";
+import { fetchUserInfoApi, fetchProfileApi } from "../api/user.api";
 import { User, UserType } from "@repo/common";
 
 export async function getUserInfo(userId: string) {

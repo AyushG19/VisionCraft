@@ -1,7 +1,7 @@
 import { DrawElement } from "@repo/common";
 import { drawShape } from "./drawing";
 import { Camera } from "../hooks/useCamera";
-import { drawGrid } from "@/lib/drawGrid";
+import { drawGrid } from "../../lib/drawGrid";
 
 export const imageCache = new Map<string, ImageBitmap | Promise<ImageBitmap>>();
 export default function redrawPreviousShapes(

@@ -936,7 +936,7 @@ export function drawOnboardingOverlay(canvas: HTMLCanvasElement) {
   //   [0, 1, 2].forEach((i) => {
   //     outlineRect(PX + 13 + i * 24, themeY + 8, 20, 20, 5);
   //   });
-  drawOptionsPanel(ctx, canvas.width - 148, 32);
+  // drawOptionsPanel(ctx, canvas.width - 148, 32);
 
   // ─── mock side toolkit (left) ────────────────────────────────────────────
   //   const TKW = 46,
@@ -975,7 +975,8 @@ export function drawOnboardingOverlay(canvas: HTMLCanvasElement) {
   //   });
   drawSideToolkit(ctx, 16, 80);
   // ─── annotations ─────────────────────────────────────────────────────────
-  const TOOLBAR_Y = 80;
+  const TOOLBAR_H = 40;
+  const TOOLBAR_W = 360;
 
   /**
    * Each annotation now carries two optional cubic control-point overrides
@@ -997,7 +998,7 @@ export function drawOnboardingOverlay(canvas: HTMLCanvasElement) {
     {
       label: "Resize",
       sub: "Resize it as you want.",
-      target: { x: W / 2 + 340, y: TOOLBAR_Y - 30 },
+      target: { x: W / 2 + TOOLBAR_W / 2, y: TOOLBAR_H / 2 },
       origin: { x: W / 2 + 220, y: 175 },
       cp1: { x: W * 0.6, y: 100 },
       cp2: { x: W * 0.8, y: 180 },
@@ -1007,7 +1008,7 @@ export function drawOnboardingOverlay(canvas: HTMLCanvasElement) {
     {
       label: "Drag",
       sub: "Drag it anywhere.",
-      target: { x: W * 0.4, y: TOOLBAR_Y },
+      target: { x: W * 0.4, y: TOOLBAR_H },
       origin: { x: W / 2 - 50, y: 175 },
       cp1: { x: W * 0.5, y: 100 },
       cp2: { x: W * 0.3, y: 180 },

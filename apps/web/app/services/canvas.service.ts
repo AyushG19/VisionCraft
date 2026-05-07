@@ -4,7 +4,7 @@ import {
   joinRoomApi,
   leaveRoomApi,
   uploadImgApi,
-} from "@/api/canvas.api";
+} from "../api/canvas.api";
 
 export async function joinRoomService(
   roomCode: string,

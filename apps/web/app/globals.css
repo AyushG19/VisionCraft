@@ -295,12 +295,12 @@
   --canvas-bg: #181818;
   --secondary: #3f3f3f;
   --secondary-700: #575757;
-  --primary: #e2e2e2;
+  --primary: #e1e1e1;
   --primary-700: #f1f1f1;
   --accent: #ffc321;
   --text: #f7f7f7;
   --primary-contrast: #040405;
-  --secondary-contrast: #ffffff;
+  --secondary-contrast: #dbd6d6;
   --global-shadow: #000000;
   --red: #f72a45;
 }
@@ -337,7 +337,7 @@
     inset 2px 2px 3px var(--color-secondary-700),
     5px 5px var(--color-global-shadow);
 
-  --shadow-shinyshadow-pressed: inset 1px 1px var(--color-global-shadow);
+  --shadow-shinyshadow-pressed: inset 2px 2px var(--color-global-shadow);
 
   --font-google-sans-code: "Google Sans Code", ui-monospace, monospace;
   --font-krona-one: "Krona One", sans-serif;

@@ -1,6 +1,6 @@
 import { JoinRoomResponseType, newRoom } from "@repo/common";
 import { axiosInstance } from "./axios";
-import { env } from "@/config";
+import { env } from "../config";
 
 export const joinRoomApi = async (
   roomCode: string,

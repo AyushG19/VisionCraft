@@ -1,13 +1,13 @@
-import axios from "axios";
-import { env } from "@/config";
+import { env } from "../config";
 
 async function ping(URL: string) {
-  await axios.get(URL, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-    timeout: 5000,
-  });
+  // await axios.get(URL, {
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   timeout: 5000,
+  // });
+  await fetch(URL, { method: "GET", mode: "no-cors", keepalive: true });
 }
 
 async function pingHttp() {
@@ -15,14 +15,15 @@ async function pingHttp() {
 }
 
 async function pingWs() {
-  await ping(env.WS_BACKEND_URL);
+  await ping(`${env.WS_BACKEND_URL}/ping`);
 }
 
 async function pingWorker() {
-  await ping(env.WORKER_BACKEND_URL);
+  await ping(`${env.WORKER_BACKEND_URL}/ping`);
 }
 
 export async function pingAllBackend() {
   await pingHttp();
   await pingWorker();
+  await pingWs();
 }

@@ -1,5 +1,5 @@
 import { Labeltype, PointType } from "@repo/common";
-import { Bounds, getHandles, Handle } from "@/lib/getHandles";
+import { Bounds, getHandles, Handle } from "../../lib/getHandles";
 
 /** helper for label drawing */
 export function drawLabel(

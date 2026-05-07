@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { type MemberCursor } from "@repo/hooks";
 import { DrawElement } from "@repo/common";
-import { worldToScreen } from "@/lib/math";
+import { worldToScreen } from "../../lib/math";
 import { Camera } from "./useCamera";
 import { getUserColor } from "../helper/color.helper";
 

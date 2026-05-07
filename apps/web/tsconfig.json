@@ -2,8 +2,7 @@
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
-      "@workspace/ui/*": ["../../packages/ui/src/*"],
-      "@/*": ["./app/*"]
+      "@workspace/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [
       {

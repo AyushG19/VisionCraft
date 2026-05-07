@@ -1,6 +1,6 @@
 import { LoginFormType, SignupFormType, User, UserType } from "@repo/common";
-import { loginApi, logoutApi, signupApi } from "@/api/auth.api";
-import { AppError } from "@/api/error";
+import { loginApi, logoutApi, signupApi } from "../api/auth.api";
+import { AppError } from "../api/error";
 
 export const loginService = async (
   loginData: LoginFormType,
