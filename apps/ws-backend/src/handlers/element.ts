@@ -104,7 +104,7 @@ export async function DRAG({
     element: cleanData.payload,
   };
   redisPub.publish(`room:${roomId}:events`, JSON.stringify(pubSubData));
-  sendInfo(ws, "Drag update sent");
+  // sendInfo(ws, "Drag update sent");
 }
 
 export async function DESELECT({
@@ -115,5 +115,16 @@ export async function DESELECT({
 }: HandlerContext) {
   if (cleanData.type !== "DESELECT") return;
   const pubSubData: RedisData = { type: "DESELECT", userId };
+  redisPub.publish(`room:${roomId}:events`, JSON.stringify(pubSubData));
+}
+
+export async function CLEAR_CANVAS({
+  ws,
+  roomId,
+  userId,
+  cleanData,
+}: HandlerContext) {
+  if (cleanData.type !== "CLEAR_CANVAS") return;
+  const pubSubData: RedisData = { type: "CLEAR_CANVAS", userId };
   redisPub.publish(`room:${roomId}:events`, JSON.stringify(pubSubData));
 }

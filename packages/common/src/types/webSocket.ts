@@ -125,6 +125,16 @@ export const ServerInfoSchema = z.object({
   payload: z.string(),
 });
 
+export const ClientClearCanvasSchema = z.object({
+  type: z.literal("CLEAR_CANVAS"),
+  payload: z.object({}),
+});
+
+export const ServerClearCanvasSchema = z.object({
+  type: z.literal("CLEAR_CANVAS"),
+  payload: z.object({ userId: z.string() }),
+});
+
 export const ServerSocketData = z.discriminatedUnion("type", [
   AddShapeSchema,
   UpdShapeSchema,
@@ -137,6 +147,7 @@ export const ServerSocketData = z.discriminatedUnion("type", [
   ServerDragSchema,
   ServerDeselectSchema,
   ServerInfoSchema,
+  ServerClearCanvasSchema,
 ]);
 export type ServerSocketDataType = z.infer<typeof ServerSocketData>;
 
@@ -151,5 +162,6 @@ export const ClientSocketData = z.discriminatedUnion("type", [
   ClientResizeSchema,
   ClientDragSchema,
   ClientElementDeselectSchema,
+  ClientClearCanvasSchema,
 ]);
 export type ClientSocketDataType = z.infer<typeof ClientSocketData>;

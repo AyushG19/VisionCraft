@@ -1,4 +1,4 @@
-import { DrawElement, PointType, ShapeType } from "@repo/common";
+import { DrawElement, PointType } from "@repo/common";
 import { Bounds, getHandles, HandleName } from "../../lib/getHandles";
 
 // Helper function to check if point is near a line segment
@@ -321,7 +321,7 @@ export const isPointInHandle = (
   py: number,
   bounds: Bounds,
   handleSize: number = 15,
-  selectedShape?: ShapeType | undefined,
+  selectedElement?: DrawElement | undefined,
   zoom: number = 1, // 👈 ADD ZOOM
 ): HandleName | null => {
   // 1. HIT TEST THE CORNER HAND
@@ -347,15 +347,15 @@ export const isPointInHandle = (
   }
 
   // 2. HIT TEST THE EDGES (LEFT, RIGHT, TOP, BOTTOM)
-  if (!selectedShape) return null;
+  if (!selectedElement || !("endX" in selectedElement)) return null;
 
-  const minX = Math.min(selectedShape.startX, selectedShape.endX);
-  const maxX = Math.max(selectedShape.startX, selectedShape.endX);
-  const minY = Math.min(selectedShape.startY, selectedShape.endY);
-  const maxY = Math.max(selectedShape.startY, selectedShape.endY);
+  const minX = Math.min(selectedElement.startX, selectedElement.endX);
+  const maxX = Math.max(selectedElement.startX, selectedElement.endX);
+  const minY = Math.min(selectedElement.startY, selectedElement.endY);
+  const maxY = Math.max(selectedElement.startY, selectedElement.endY);
 
   const SCREEN_PADDING = 5;
-  const tol = (selectedShape.strokeWidth || 2) / 2 + SCREEN_PADDING / zoom;
+  const tol = (selectedElement.strokeWidth || 2) / 2 + SCREEN_PADDING / zoom;
 
   if (Math.abs(px - minX) <= tol && py >= minY - tol && py <= maxY + tol)
     return "LEFT";

@@ -1,66 +1,48 @@
-import { useEffect, RefObject, useRef } from "react";
+import { useEffect, useRef, RefObject } from "react";
 import { DrawElement } from "@repo/common";
-import { CanvasState } from "../types";
-import redrawPreviousShapes from "../utils/redrawPreviousShapes";
-import oklchToCSS from "../../lib/oklchToCss";
+import { MemberCursor } from "@repo/hooks";
 import { Camera } from "./useCamera";
+import { ActiveElementMapType, CanvasState } from "../types";
+import useRafLoop from "./useRafLoop";
 
 const useCanvasRenderer = (
   canvasRef: RefObject<HTMLCanvasElement | null>,
   canvasState: CanvasState,
-  selectedShape: DrawElement | undefined,
-  canvasStateRef: React.MutableRefObject<CanvasState>,
-  selectedShapeRef: React.MutableRefObject<DrawElement | undefined>,
-  inRoom: boolean,
-  camera: Camera,
+  selectedElementRef: RefObject<DrawElement | undefined>,
+  cameraRef: RefObject<Camera>, // ← ref directly from useCamera
+  cursorMapRef: RefObject<MemberCursor>,
+  activeElementMapRef: RefObject<ActiveElementMapType>,
+  staticDirtyRef: RefObject<boolean>, // ← owned by useCanvasInteraction
 ) => {
-  const frameRef = useRef<number | null>(null);
+  const canvasStateRef = useRef(canvasState);
+  const prevDrawnShapesRef = useRef(canvasState.drawnShapes);
+  const prevSelectedIdRef = useRef(selectedElementRef.current?.id);
 
+  // Sync canvasState ref + detect static layer changes every render
   useEffect(() => {
-    canvasStateRef.current = canvasState;
-    selectedShapeRef.current = selectedShape;
+    const shapesChanged =
+      prevDrawnShapesRef.current !== canvasState.drawnShapes;
+    const selectionChanged =
+      prevSelectedIdRef.current !== selectedElementRef.current?.id;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current);
+    if (shapesChanged || selectionChanged) {
+      staticDirtyRef.current = true;
     }
 
-    frameRef.current = requestAnimationFrame(() => {
-      ctx.strokeStyle = oklchToCSS(canvasState.toolState.currentColor);
-      ctx.lineWidth = canvasState.toolState.strokeSize;
-      ctx.font = `${canvasState.textState.fontSize}px ${canvasState.textState.fontFamily}`;
+    canvasStateRef.current = canvasState;
+    prevDrawnShapesRef.current = canvasState.drawnShapes;
+    prevSelectedIdRef.current = selectedElementRef.current?.id;
+  }); // no deps — runs every render
 
-      redrawPreviousShapes(
-        ctx,
-        canvasState.drawnShapes,
-        camera,
-        selectedShape,
-        selectedShape?.id,
-      );
-
-      frameRef.current = null;
-    });
-
-    return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-    };
-  }, [
-    canvasState,
-    selectedShape,
-    canvasStateRef,
-    selectedShapeRef,
+  useRafLoop({
     canvasRef,
-    inRoom,
-    camera,
-  ]);
+    canvasStateRef,
+    selectedElementRef,
+    cameraRef,
+    cursorMapRef,
+    activeElementMapRef,
+    staticDirtyRef,
+  });
 };
 
 export default useCanvasRenderer;

@@ -29,7 +29,7 @@ const Page = () => {
   const { loading, result, handleDrawRequest } = useAi(
     wb.canvasRef,
     wb.canvasDispatch,
-    wb.camera,
+    wb.cameraRef.current,
   );
 
   const sendReqToAi = (command: string) => {
@@ -117,7 +117,7 @@ const Page = () => {
           ),
       )}
       <SideToolkit
-        selectedShape={wb.selectedShape}
+        selectedShape={wb.selectedElementRef.current}
         tool={wb.canvasState.toolState.currentTool}
         onChange={() => {}}
         onDelete={() => {}}
@@ -173,6 +173,7 @@ const Page = () => {
           setTheme={setTheme}
           onExitRoom={wb.handleLeaveRoom}
           onLogout={logout}
+          clearCanvas={wb.clearCanvas}
         />
 
         <SideCollapseChat

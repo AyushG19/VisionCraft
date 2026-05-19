@@ -1,5 +1,6 @@
-import { useCallback } from "react";
-import { ClientShapeManipulation, DrawElement, ShapeType } from "@repo/common";
+"use client";
+import React, { useCallback } from "react";
+import { ClientShapeManipulation, DrawElement } from "@repo/common";
 import {
   isClickOnShape,
   isInsideSelectBound,
@@ -9,21 +10,30 @@ import {
   getBoundsForHandles,
   getOutlineBounds,
 } from "../utils/getBoundsHelpers";
-import redrawPreviousShapes from "../utils/redrawPreviousShapes";
-import { CanvasState, Action } from "../types";
+import { CanvasState, Action, ActiveElementMapType } from "../types";
 import {
   createDraggedShape,
   createResizedShape,
 } from "../utils/createTempShapeHelper";
 import { HandleName } from "../../lib/getHandles";
 import useInteractionState from "./useInteractionState";
-import { Camera } from "./useCamera";
+// import { markStaticDirty } from "../utils/offscreenCanvas";
 
 type UseInteractionStateReturn = ReturnType<typeof useInteractionState>;
 
+function isLockedByOther(
+  shapeId: string,
+  myUserId: string,
+  activeMap: ActiveElementMapType,
+) {
+  for (const [userId, entry] of activeMap) {
+    if (entry.element.id === shapeId && entry.userId !== myUserId) return true;
+  }
+  return false;
+}
+
 const useSelectInteraction = (
   interactionState: UseInteractionStateReturn,
-  setSelectedShape: (shape: DrawElement | undefined) => void,
   dispatchWithSocket: (action: Action) => void,
 ) => {
   const {
@@ -35,35 +45,44 @@ const useSelectInteraction = (
     resetDragAndResize,
   } = interactionState;
 
+  // useSocketWithWhiteboard.ts
+  // const { currentUser } = useUser(); // null when not logged in
+
+  // const userId = useMemo(() => {
+  //   if (currentUser) return currentUser.userId; // authenticated + in room
+
+  //   // anonymous local session
+  //   const stored = sessionStorage.getItem("guestId");
+  //   if (stored) return stored;
+  //   const fresh = crypto.randomUUID();
+  //   sessionStorage.setItem("guestId", fresh);
+  //   return fresh;
+  // }, [currentUser]);
+
   // Determines what was clicked and sets up the interaction mode.
-  // Returns the shape that should become selected (or undefined).
 
   const handleSelectMouseDown = useCallback(
     (
       worldPos: { x: number; y: number },
-      currentSelected: DrawElement | undefined,
       canvasState: CanvasState,
-      activeElementMap: Map<
-        string,
-        {
-          isDirty: boolean;
-          element: DrawElement;
-          operation: "resize" | "drag";
-        }
-      >,
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
+      activeElementMapRef: React.RefObject<ActiveElementMapType>,
+      // sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
+      // userId: string,
+      // activeElementMap: ActiveElementMapType,
     ): DrawElement | undefined => {
       //Case 1: Something already selected
-      if (currentSelected) {
-        const outlineBounds = getOutlineBounds(currentSelected);
-        const handleBounds = getBoundsForHandles(currentSelected);
+      if (selectedElementRef.current) {
+        const outlineBounds = getOutlineBounds(selectedElementRef.current);
+        const handleBounds = getBoundsForHandles(selectedElementRef.current);
 
         // Clicked inside selected shape body? → Start drag
         if (isInsideSelectBound(worldPos, outlineBounds!)) {
-          startDrag(currentSelected.id, worldPos, {
-            x: currentSelected.startX,
-            y: currentSelected.startY,
+          startDrag(selectedElementRef.current.id, worldPos, {
+            x: selectedElementRef.current.startX,
+            y: selectedElementRef.current.startY,
           });
-          return currentSelected;
+          return selectedElementRef.current;
         }
 
         // Clicked on resize handle? → Start resize
@@ -72,12 +91,13 @@ const useSelectInteraction = (
           worldPos.y,
           handleBounds!,
           undefined,
-          currentSelected as ShapeType,
+          selectedElementRef.current,
         );
         if (hitHandle) {
           startResize(hitHandle);
-          return currentSelected;
+          return selectedElementRef.current;
         }
+        return undefined;
       }
 
       //  Case 2: Click on different shape
@@ -86,14 +106,21 @@ const useSelectInteraction = (
         .reverse()
         .find((shape: DrawElement) => isClickOnShape(worldPos, shape));
 
-      if (!clickedShape) return undefined;
+      if (!clickedShape) {
+        return undefined;
+      }
 
       // Inside handleSelectMouseDown, before allowing selection of a shape:
       // const isLockedByOther = [...activeElementMap.values()].some(
       //   (entry) => entry.element.id === clickedShape.id,
       // );
-
-      if (!clickedShape.isSelected && !clickedShape.isDeleted) {
+      // pure function — no shape mutation needed
+      const isLockedByOther = [...activeElementMapRef.current.values()].some(
+        (entry) => entry.element.id === clickedShape.id,
+      );
+      if (isLockedByOther) {
+        return undefined;
+      } else {
         // Immediately set up drag so click+drag works in one motion
         startDrag(clickedShape.id, worldPos, {
           x: clickedShape.startX,
@@ -102,8 +129,32 @@ const useSelectInteraction = (
         return clickedShape;
       }
 
+      //if currently selected shape,and no new shape,make if shape selected flase remove active element from socket for others too
+      // if (selectedElementRef.current && !clickedShape) {
+      //   dispatchWithSocket({
+      //     type: "UPD_SHAPE",
+      //     payload: { ...selectedElementRef.current, isSelected: false },
+      //   });
+      //   sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+      // } else if (selectedElementRef.current && clickedShape) {
+      //   dispatchWithSocket({
+      //     type: "UPD_SHAPE",
+      //     payload: { ...selectedElementRef.current, isSelected: false },
+      //   });
+      //   dispatchWithSocket({
+      //     type: "UPD_SHAPE",
+      //     payload: { ...clickedShape, isSelected: true },
+      //   });
+      // } else if (!selectedElementRef.current && clickedShape) {
+      //   dispatchWithSocket({
+      //     type: "UPD_SHAPE",
+      //     payload: { ...clickedShape, isSelected: true },
+      //   });
+      // }
+
+      // return undefined;
+
       //  Case 3: Clicked empty space → Deselect
-      return undefined;
     },
     [startDrag, startResize],
   );
@@ -115,13 +166,14 @@ const useSelectInteraction = (
   const handleSelectMouseMove = useCallback(
     (
       worldPos: { x: number; y: number },
-      ctx: CanvasRenderingContext2D,
-      currentSelected: DrawElement | undefined,
-      canvasState: CanvasState,
-      camera: Camera,
+      // ctx: CanvasRenderingContext2D,
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
+      // canvasState: CanvasState,
+      // camera: Camera,
       sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
+      // setSelectedElement: (element?: DrawElement) => void,
     ): boolean => {
-      if (!currentSelected) return false;
+      if (!selectedElementRef.current) return false;
 
       //  Drag preview
       if (interaction.current.isDragging) {
@@ -129,16 +181,18 @@ const useSelectInteraction = (
         const previewShape = createDraggedShape(
           dragState,
           worldPos,
-          currentSelected,
+          selectedElementRef.current,
         );
+        selectedElementRef.current = previewShape;
 
-        redrawPreviousShapes(
-          ctx,
-          canvasState.drawnShapes,
-          camera,
-          previewShape,
-          currentSelected.id,
-        );
+        // setSelectedElement(previewShape);
+        // redrawPreviousShapes(
+        //   ctx,
+        //   canvasState.drawnShapes,
+        //   camera,
+        //   previewShape,
+        //   selectedElementRef.current.id,
+        // );
         sendActiveElementUpdate({ type: "DRAG", payload: previewShape });
         return true;
       }
@@ -152,16 +206,18 @@ const useSelectInteraction = (
         const previewShape = createResizedShape(
           resizeState,
           worldPos,
-          currentSelected,
+          selectedElementRef.current,
         );
+        selectedElementRef.current = previewShape;
+        // setSelectedElement(previewShape);
 
-        redrawPreviousShapes(
-          ctx,
-          canvasState.drawnShapes,
-          camera,
-          previewShape,
-          currentSelected.id,
-        );
+        // redrawPreviousShapes(
+        //   ctx,
+        //   canvasState.drawnShapes,
+        //   camera,
+        //   previewShape,
+        //   currentSelected.id,
+        // );
         sendActiveElementUpdate({ type: "RESIZE", payload: previewShape });
         return true;
       }
@@ -177,55 +233,57 @@ const useSelectInteraction = (
   const handleSelectMouseUp = useCallback(
     (
       worldPos: { x: number; y: number },
-      currentSelected: DrawElement | undefined,
-    ) => {
-      if (!currentSelected) {
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
+      // setSelectedElement: (element?: DrawElement) => void,
+    ): boolean => {
+      if (!selectedElementRef.current) {
         resetDragAndResize();
-        return;
+        return false;
       }
 
       // ─── Commit drag ──────────────────────────────────────────
       if (interaction.current.isDragging) {
         const dragState = getDragState();
-        const finalShape = createDraggedShape(
+        const tempElement = createDraggedShape(
           dragState,
           worldPos,
-          currentSelected,
+          selectedElementRef.current,
         );
 
         dispatchWithSocket({
           type: "UPD_SHAPE",
-          payload: finalShape,
+          payload: tempElement,
         });
-
-        setSelectedShape(finalShape);
+        selectedElementRef.current = tempElement;
+        resetDragAndResize();
+        return true;
+        // setSelectedElement(finalShape);
       }
 
       // ─── Commit resize ────────────────────────────────────────
       if (interaction.current.isResizing) {
         const resizeState = getResizeState();
-        const finalShape = createResizedShape(
+        selectedElementRef.current = createResizedShape(
           resizeState,
           worldPos,
-          currentSelected,
+          selectedElementRef.current,
         );
 
         dispatchWithSocket({
           type: "UPD_SHAPE",
-          payload: finalShape,
+          payload: selectedElementRef.current,
         });
-
-        setSelectedShape(finalShape);
+        resetDragAndResize();
+        return true;
+        // setSelectedElement(finalShape);
       }
-
-      resetDragAndResize();
+      return false;
     },
     [
       interaction,
       getDragState,
       getResizeState,
       dispatchWithSocket,
-      setSelectedShape,
       resetDragAndResize,
     ],
   );

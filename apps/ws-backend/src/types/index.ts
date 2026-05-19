@@ -34,7 +34,8 @@ export type RedisData =
   | { type: "JOIN"; userId: string; time: number }
   | { type: "RESIZE"; userId: string; element: DrawElement }
   | { type: "DRAG"; userId: string; element: DrawElement }
-  | { type: "DESELECT"; userId: string };
+  | { type: "DESELECT"; userId: string }
+  | { type: "CLEAR_CANVAS"; userId: string };
 
 export type SendPropsType = ClientChatSchemaType | WebSocketShapeType;
 

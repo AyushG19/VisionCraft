@@ -46,7 +46,8 @@ export type Action =
   | { type: "CHANGE_COLOR"; payload: ColorType }
   | { type: "CHANGE_BRUSHSIZE"; payload: number }
   | { type: "UPD_EDITOR"; payload: Partial<SideToolKitState> }
-  | { type: "UPD_TEXT_STATE"; payload: Partial<TextStateType> };
+  | { type: "UPD_TEXT_STATE"; payload: Partial<TextStateType> }
+  | { type: "CLEAR_CANVAS" };
 
 export interface ChatModalProps {
   wsRef: RefObject<WebSocket | null>;
@@ -114,3 +115,8 @@ export type SendPropsType =
 export type eventHandlerContext = {};
 
 export type FontTypes = "google sans code" | "times new roman" | "sans serif";
+
+export type ActiveElementMapType = Map<
+  string,
+  { isDirty: boolean; userId: string; element: DrawElement }
+>;

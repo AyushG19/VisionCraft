@@ -1,15 +1,13 @@
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import { Action, SideToolKitState } from "../types";
-import redrawPreviousShapes from "../utils/redrawPreviousShapes";
 import {
   createNewPencil,
   createNewShape,
   finishPencil,
   updatePencil,
 } from "../utils/createNewShape";
-import { DrawElement, PencilType, PointType, ToolKitType } from "@repo/common";
+import { DrawElement, PointType, ToolKitType } from "@repo/common";
 import useInteractionState from "./useInteractionState";
-import { Camera } from "./useCamera";
 
 type UseInteractionStateReturn = ReturnType<typeof useInteractionState>;
 
@@ -17,27 +15,31 @@ const useDrawInteraction = (
   interactionState: UseInteractionStateReturn,
   dispatchWithSocket: (action: Action) => void,
 ) => {
-  const { interaction, tempShape, startDrawing, setTempShape, stopDrawing } =
-    interactionState;
+  const { interaction, startDrawing, stopDrawing } = interactionState;
 
   // Initializes drawing. For pencil, creates the temp shape immediately.
 
   const handleDrawMouseDown = useCallback(
-    (worldPos: PointType, toolKitState: ToolKitType) => {
+    (
+      worldPos: PointType,
+      toolKitState: ToolKitType,
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
+      // setSelectedElement: (element: DrawElement) => void,
+    ) => {
       startDrawing(worldPos);
 
       // for pendil create temp shape on mousedown so even
       // a single click (no drag) creates a dot
       if (toolKitState.currentTool === "pencil") {
-        const initialShape = createNewPencil(
+        selectedElementRef.current = createNewPencil(
           worldPos,
           toolKitState.strokeSize,
           toolKitState.currentColor,
         );
-        setTempShape(initialShape);
+        // setSelectedElement(initialShape);
       }
     },
-    [startDrawing, setTempShape],
+    [startDrawing],
   );
 
   //  MOUSEMOVE Updates preview for regular shapes or streams points for pencil.
@@ -45,12 +47,13 @@ const useDrawInteraction = (
   const handleDrawMouseMove = useCallback(
     (
       worldPos: PointType,
-      ctx: CanvasRenderingContext2D,
+      // ctx: CanvasRenderingContext2D,
       toolState: ToolKitType,
       sideToolKit: SideToolKitState,
-      drawnShapes: DrawElement[],
-      selectedShapeId: string | undefined,
-      camera: Camera,
+      // drawnShapes: DrawElement[],
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
+      // camera: Camera,
+      // setSelectedElement: (element: DrawElement) => void,
     ) => {
       if (!interaction.current.isDrawing) return;
 
@@ -58,42 +61,46 @@ const useDrawInteraction = (
 
       // PENCIL tool
       if (tool === "pencil") {
-        if (!tempShape.current || tempShape.current.type !== "pencil") return;
+        if (
+          !selectedElementRef.current ||
+          selectedElementRef.current.type !== "pencil"
+        )
+          return;
 
-        const updatedPencil = updatePencil(
+        selectedElementRef.current = updatePencil(
           worldPos,
-          tempShape.current as PencilType,
+          selectedElementRef.current,
         );
-        setTempShape(updatedPencil);
 
         // Redraw with the growing pencil shape appended
-        redrawPreviousShapes(
-          ctx,
-          [...drawnShapes, updatedPencil],
-          camera,
-          undefined,
-          selectedShapeId,
-        );
+        // redrawPreviousShapes(
+        //   ctx,
+        //   [...drawnShapes, updatedPencil],
+        //   camera,
+        //   undefined,
+        //   selectedShapeId,
+        // );
         return;
       }
 
       // Regular shapes (preview from start→current)
-      const previewShape = createNewShape(
+      selectedElementRef.current = createNewShape(
         toolState,
         sideToolKit,
         interaction.current.startPos,
         worldPos,
       );
 
-      redrawPreviousShapes(
-        ctx,
-        drawnShapes,
-        camera,
-        previewShape,
-        selectedShapeId,
-      );
+      // setSelectedElement(previewElement);
+      // redrawPreviousShapes(
+      //   ctx,
+      //   drawnShapes,
+      //   camera,
+      //   previewShape,
+      //   selectedShapeId,
+      // );
     },
-    [interaction, tempShape, setTempShape],
+    [interaction],
   );
 
   // ---- MOUSEUP
@@ -104,6 +111,8 @@ const useDrawInteraction = (
       worldPos: PointType,
       toolKitState: ToolKitType,
       sideTookKitState: SideToolKitState,
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
+      // setSelectedElement: (element?: DrawElement) => void,
     ) => {
       if (!interaction.current.isDrawing) return;
 
@@ -112,13 +121,16 @@ const useDrawInteraction = (
       // ─── PENCIL tool (finalize)
       if (tool === "pencil") {
         stopDrawing();
-        if (tempShape.current && tempShape.current.type === "pencil") {
-          const finalShape = finishPencil(tempShape.current as PencilType);
+        if (
+          selectedElementRef.current &&
+          selectedElementRef.current.type === "pencil"
+        ) {
+          const finalShape = finishPencil(selectedElementRef.current);
           dispatchWithSocket({
             type: "ADD_SHAPE",
             payload: finalShape,
           });
-          setTempShape(null);
+          selectedElementRef.current = finalShape;
         }
         return;
       }
@@ -137,8 +149,10 @@ const useDrawInteraction = (
       });
 
       stopDrawing();
+      selectedElementRef.current = undefined;
+      // setSelectedElement();
     },
-    [interaction, tempShape, stopDrawing, setTempShape, dispatchWithSocket],
+    [interaction, stopDrawing, dispatchWithSocket],
   );
 
   return {

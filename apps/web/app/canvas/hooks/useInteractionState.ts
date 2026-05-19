@@ -14,7 +14,7 @@ const useInteractionState = () => {
     dragOffset: { x: 0, y: 0 },
   });
 
-  const tempShapeRef = useRef<DrawElement | null>(null);
+  const tempShapeRef = useRef<DrawElement | undefined>(undefined);
   const eraseStateRef = useRef<{
     isErasing: boolean;
     elementsToDelete: string[];
@@ -56,10 +56,6 @@ const useInteractionState = () => {
     };
   }, []);
 
-  const setTempShape = useCallback((shape: DrawElement | null) => {
-    tempShapeRef.current = shape;
-  }, []);
-
   const resetDragAndResize = useCallback(() => {
     interactionRef.current.isDragging = false;
     interactionRef.current.isResizing = false;
@@ -92,11 +88,10 @@ const useInteractionState = () => {
 
   return {
     interaction: interactionRef,
-    tempShape: tempShapeRef,
+    tempShapeRef,
     startDrag,
     startResize,
     startDrawing,
-    setTempShape,
     resetDragAndResize,
     stopDrawing,
     getDragState,

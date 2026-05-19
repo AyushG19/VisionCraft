@@ -11,6 +11,7 @@ import useCanvasInteraction from "./useCanvasInteraction";
 import canvasReducer, { initialCanvasState } from "../utils/canvasReducer";
 import {
   Action,
+  ActiveElementMapType,
   CanvasState,
   FontTypes,
   SendPropsType,
@@ -43,9 +44,6 @@ import {
   generateUserObject,
   incomingSocketHandlers,
 } from "../../canvas/helper/socketMessage.helper";
-import useRafLoop from "./useRafLoop";
-import redrawPreviousShapes from "../utils/redrawPreviousShapes";
-import { debounce } from "../utils/rateLimiting";
 import { Camera } from "./useCamera";
 
 export const useSocketWithWhiteboard = (): {
@@ -54,8 +52,9 @@ export const useSocketWithWhiteboard = (): {
   textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
   sideToolkitRef: React.RefObject<HTMLDivElement | null>;
   canvasState: CanvasState;
-  selectedShape: DrawElement | undefined;
-  setSelectedShape: (shape: DrawElement | undefined) => void;
+  // selectedElement: DrawElement | undefined;
+  // setSelectedElement: (shape: DrawElement | undefined) => void;
+  selectedElementRef: React.RefObject<DrawElement | undefined>;
   canvasDispatch: React.Dispatch<Action>;
   dispatchWithSocket: (action: Action) => void;
   handleToolSelect: (toolName: AllToolTypes) => void;
@@ -92,8 +91,9 @@ export const useSocketWithWhiteboard = (): {
   handleFontSelect: (font: FontTypes, shape: ShapeType | TextType) => void;
   handleFontSize: (size: number, shape?: TextType) => void;
   handleFontFamily: (font: AllowedFonts, shape?: TextType) => void;
+  clearCanvas: () => void;
   users: RoomInfo["users"];
-  camera: Camera;
+  cameraRef: React.RefObject<Camera>;
 } => {
   const [canvasState, canvasDispatch] = useReducer(
     canvasReducer,
@@ -104,12 +104,7 @@ export const useSocketWithWhiteboard = (): {
   const [messages, setMessages] = useState<ServerMessageType[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const sideToolkitRef = useRef<HTMLDivElement | null>(null);
-  const activeElementMap = useRef<
-    Map<
-      string,
-      { isDirty: boolean; element: DrawElement; operation: "resize" | "drag" }
-    >
-  >(new Map());
+  const activeElementMap = useRef<ActiveElementMapType>(new Map());
 
   const {
     inRoom,
@@ -157,6 +152,11 @@ export const useSocketWithWhiteboard = (): {
   const sendCursorState = (pos: PointType) => {
     send("CURSOR", pos);
   };
+
+  const clearCanvas = () => {
+    dispatchWithSocket({ type: "CLEAR_CANVAS" });
+  };
+
   const handleJoinRoom = async (code: string) => {
     try {
       const data = await joinRoomService(code);
@@ -216,9 +216,9 @@ export const useSocketWithWhiteboard = (): {
           break;
 
         case "UPD_SHAPE":
-          const updFn = send;
-          const dbUpdate = debounce(updFn, 100);
-          dbUpdate("UPD_SHAPE", action.payload);
+          // const updFn = send;
+          // const dbUpdate = debounce(updFn, 1000);
+          send("UPD_SHAPE", action.payload);
           break;
 
         case "DEL_SHAPE":
@@ -231,6 +231,7 @@ export const useSocketWithWhiteboard = (): {
 
   const sendActiveElementUpdate = useCallback(
     (event: ClientShapeManipulation) => {
+      if (!inRoom) return;
       switch (event.type) {
         case "RESIZE":
           send("RESIZE", event.payload);
@@ -246,13 +247,12 @@ export const useSocketWithWhiteboard = (): {
   );
 
   const {
-    selectedShape,
-    setSelectedShape,
-    camera,
-    finishText,
+    cameraRef,
     cancelText,
-    textEdit,
+    finishText,
+    selectedElementRef,
     setTextEdit,
+    textEdit,
   } = useCanvasInteraction(
     canvasRef,
     inputRef,
@@ -264,7 +264,8 @@ export const useSocketWithWhiteboard = (): {
     inRoom,
     sideToolkitRef.current,
     sendActiveElementUpdate,
-    activeElementMap.current,
+    memberCursor,
+    activeElementMap,
   );
 
   // useEffect(() => {
@@ -277,33 +278,33 @@ export const useSocketWithWhiteboard = (): {
   }, [canvasState.drawnShapes]);
 
   // Now redrawForActiveElement always reads fresh values
-  const redrawForActiveElement = (element: DrawElement, color: string) => {
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
+  // const redrawForActiveElement = (element: DrawElement, color: string) => {
+  //   const ctx = canvasRef.current?.getContext("2d");
+  //   if (!ctx) return;
 
-    redrawPreviousShapes(
-      ctx,
-      drawnShapesRef.current,
-      camera,
-      element,
-      element.id,
-      color,
-    );
-  };
-  useRafLoop({
-    cursorMap: memberCursor.current,
-    activeElementMap: activeElementMap.current,
-    redrawForActiveElement,
-    camera: camera,
-  });
+  //   redrawPreviousShapes(
+  //     ctx,
+  //     drawnShapesRef.current,
+  //     camera,
+  //     element,
+  //     element.id,
+  //     color,
+  //   );
+  // };
+  // useRafLoop({
+  //   cursorMap: memberCursor.current,
+  //   activeElementMap: activeElementMap.current,
+  //   redrawForActiveElement,
+  //   camera: camera,
+  // });
 
   const handleToolSelect = (toolName: AllToolTypes) => {
     if (toolName === "color") return;
     canvasDispatch({ type: "CHANGE_TOOL", payload: toolName });
 
-    if (toolName !== "select" && selectedShape) {
-      setSelectedShape(undefined);
-    }
+    // if (toolName !== "select" && selectedElement) {
+    //   setSelectedElement(undefined);
+    // }
   };
 
   /**Handling color of stroke */
@@ -319,7 +320,8 @@ export const useSocketWithWhiteboard = (): {
         strokeColor: color,
       };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      setSelectedShape(newShape);
+      selectedElementRef.current = newShape;
+      // setSelectedElement(newShape);
       return;
     }
     canvasDispatch({ type: "CHANGE_COLOR", payload: color });
@@ -337,7 +339,8 @@ export const useSocketWithWhiteboard = (): {
         strokeWidth: size,
       };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      setSelectedShape(newShape);
+      selectedElementRef.current = newShape;
+      // setSelectedElement(newShape);
       return;
     }
     canvasDispatch({ type: "CHANGE_BRUSHSIZE", payload: size });
@@ -350,7 +353,8 @@ export const useSocketWithWhiteboard = (): {
       console.log("shape", shape);
       const newShape: ShapeType = { ...shape, fillColor: color };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      setSelectedShape(newShape);
+      selectedElementRef.current = newShape;
+      // setSelectedElement(newShape);
       return;
     }
   };
@@ -365,7 +369,8 @@ export const useSocketWithWhiteboard = (): {
         strokeType: style,
       };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      setSelectedShape(newShape);
+      selectedElementRef.current = newShape;
+      // setSelectedElement(newShape);
       return;
     }
   };
@@ -373,7 +378,8 @@ export const useSocketWithWhiteboard = (): {
     if (element) {
       const newElement: DrawElement = { ...element, isDeleted: true };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newElement });
-      setSelectedShape(newElement);
+      selectedElementRef.current = newElement;
+      // setSelectedElement(newElement);
       return;
     }
   };
@@ -388,7 +394,8 @@ export const useSocketWithWhiteboard = (): {
         newShape = { ...shape, label: { ...shape.label, fontFamily: font } };
       }
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      setSelectedShape(newShape);
+      selectedElementRef.current = newShape;
+      // setSelectedElement(newShape);
       return;
     }
   };
@@ -397,7 +404,8 @@ export const useSocketWithWhiteboard = (): {
     if (shape) {
       const newText: TextType = { ...shape, fontSize: size };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newText });
-      setSelectedShape(newText);
+      selectedElementRef.current = newText;
+      // setSelectedElement(newText);
       return;
     }
   };
@@ -406,7 +414,8 @@ export const useSocketWithWhiteboard = (): {
     if (shape) {
       const newText: TextType = { ...shape, fontFamily: font };
       canvasDispatch({ type: "UPD_SHAPE", payload: newText });
-      setSelectedShape(newText);
+      selectedElementRef.current = newText;
+      // setSelectedElement(newText);
       return;
     }
   };
@@ -424,8 +433,9 @@ export const useSocketWithWhiteboard = (): {
     inputRef,
     textAreaRef,
     canvasState,
-    selectedShape,
-    setSelectedShape,
+    // selectedElement,
+    // setSelectedElement,
+    selectedElementRef,
     canvasDispatch,
     dispatchWithSocket,
     handleToolSelect,
@@ -436,7 +446,7 @@ export const useSocketWithWhiteboard = (): {
     messages,
     setMessages,
     send,
-    camera,
+    cameraRef,
     textEdit,
     setTextEdit,
     finishText,
@@ -458,5 +468,6 @@ export const useSocketWithWhiteboard = (): {
     handleFontFamily,
     slug: roomInfo.slug,
     users: roomInfo.users,
+    clearCanvas,
   };
 };

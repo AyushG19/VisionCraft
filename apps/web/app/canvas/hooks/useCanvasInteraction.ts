@@ -1,31 +1,39 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { ClientShapeManipulation, DrawElement, PointType } from "@repo/common";
 import {
-  ClientShapeManipulation,
-  DrawElement,
-  PointType,
-  ShapeType,
-} from "@repo/common";
-import { Action, CanvasState, TextEditState } from "../types";
+  Action,
+  ActiveElementMapType,
+  CanvasState,
+  TextEditState,
+} from "../types";
 import resizeCanvas from "../utils/canvasResizeHelper";
 import redrawPreviousShapes, {
   imageCache,
 } from "../utils/redrawPreviousShapes";
 
 import useInteractionState from "./useInteractionState";
-import useCanvasCursor from "./useCanvasCursor";
 import useSelectInteraction from "./useSelectInteraction";
 import useDrawInteraction from "./useDrawingInteraction";
-import useCanvasRenderer from "./useCanvasRenderer";
-import { getMousePos } from "../helper/coordinate.helper";
-import { useCamera } from "./useCamera";
+import { getMousePosOnWorld } from "../helper/coordinate.helper";
+import { Camera, useCamera } from "./useCamera";
 import { screenToWorld } from "../../lib/math";
 import { storeImg } from "../../services/canvas.service";
 import { set } from "idb-keyval";
 import { createNewImage, createNewText } from "../utils/createNewShape";
 import { measureText } from "../helper/canvas.helper";
 import { isClickOnShape } from "../utils/isPointInShape";
+import { MemberCursor } from "@repo/hooks";
+import useCanvasRenderer from "./useCanvasRenderer";
+import { updateCursor } from "../helper/cursorUpdate.helper";
 
 const useCanvasInteraction = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -38,23 +46,45 @@ const useCanvasInteraction = (
   inRoom: boolean,
   sideToolkit: HTMLDivElement | null,
   sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
-  activeElementMap: Map<
-    string,
-    {
-      isDirty: boolean;
-      element: DrawElement;
-      operation: "resize" | "drag";
-    }
-  >,
-) => {
-  const [selectedShape, setSelectedShape] = useState<DrawElement | undefined>(
-    undefined,
-  );
+  memberCursorMapRef: React.RefObject<MemberCursor>,
+  activeElementMapRef: React.RefObject<ActiveElementMapType>,
+): {
+  selectedElementRef: React.RefObject<DrawElement | undefined>;
+  cameraRef: React.RefObject<Camera>;
+  cancelText: () => void;
+  finishText: () => void;
+  textEdit: TextEditState;
+  setTextEdit: Dispatch<SetStateAction<TextEditState>>;
+} => {
+  // const [selectedElement, setSelectedElement] = useState<
+  //   DrawElement | undefined
+  // >(undefined);
   const [textEdit, setTextEdit] = useState<TextEditState>(null);
   const interactionState = useInteractionState();
-  const cursor = useCanvasCursor(canvasRef);
-  const { camera, onPanStart, onPanMove, onPanEnd, isPanning, onWheel } =
-    useCamera(canvasRef, canvasState.toolState.currentTool);
+  const selectedElementRef = interactionState.tempShapeRef;
+  // const cursor = useCanvasCursor(canvasRef);
+  const staticDirtyRef = useRef(true);
+  const markStaticDirty = useCallback(() => {
+    staticDirtyRef.current = true;
+  }, []);
+
+  // 2. useCamera gets markStaticDirty, returns cameraRef
+  const { cameraRef, onPanStart, onPanMove, onPanEnd, isPanning, onWheel } =
+    useCamera(canvasRef, canvasState.toolState.currentTool, markStaticDirty);
+
+  useEffect(() => {
+    canvasStateRef.current = canvasState;
+  }); // no deps = runs every render
+
+  useCanvasRenderer(
+    canvasRef,
+    canvasState,
+    selectedElementRef,
+    cameraRef,
+    memberCursorMapRef,
+    activeElementMapRef,
+    staticDirtyRef,
+  );
 
   const finishText = useCallback(() => {
     if (!textEdit || !canvasRef.current) return;
@@ -72,17 +102,17 @@ const useCanvasInteraction = (
     const element = createNewText(
       canvasState.toolState,
       textState,
-      screenToWorld(textEdit.x, textEdit.y, camera),
+      screenToWorld(textEdit.x, textEdit.y, cameraRef.current),
       textEdit.text,
-      width / camera.z,
-      height / camera.z,
+      width / cameraRef.current.z,
+      height / cameraRef.current.z,
     );
 
     dispatchWithSocket({ type: "ADD_SHAPE", payload: element });
     dispatchWithSocket({ type: "CHANGE_TOOL", payload: "select" });
     setTextEdit(null);
 
-    console.log("cameraera;", camera);
+    console.log("cameraRefera;", cameraRef);
   }, [textEdit, canvasState.textState]);
 
   const cancelText = useCallback(() => {
@@ -91,7 +121,6 @@ const useCanvasInteraction = (
 
   const selectInteraction = useSelectInteraction(
     interactionState,
-    setSelectedShape,
     dispatchWithSocket,
   );
 
@@ -100,30 +129,21 @@ const useCanvasInteraction = (
     dispatchWithSocket,
   );
 
-  const selectedShapeRef = useRef(selectedShape);
   const canvasStateRef = useRef(canvasState);
-
-  useCanvasRenderer(
-    canvasRef,
-    canvasState,
-    selectedShape,
-    canvasStateRef,
-    selectedShapeRef,
-    inRoom,
-    camera,
-  );
 
   useEffect(() => {
     const tool = canvasState.toolState.currentTool;
-
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     // if (tool === "image") {
     //   inputRef.current?.click();
     //   inputRef.current?.blur();
     // }
-    cursor.updateCursor(
+    updateCursor(
+      canvas,
       tool,
-      screenToWorld(0, 0, camera),
-      selectedShape as ShapeType,
+      screenToWorld(0, 0, cameraRef.current),
+      selectedElementRef,
       canvasState.drawnShapes,
       isPanning.current,
       false,
@@ -147,7 +167,12 @@ const useCanvasInteraction = (
       canvas,
       ctx,
       () =>
-        redrawPreviousShapes(ctx, canvasStateRef.current.drawnShapes, camera),
+        redrawPreviousShapes(
+          ctx,
+          canvasStateRef.current.drawnShapes,
+          cameraRef.current,
+          activeElementMapRef.current,
+        ),
       canvasStateRef.current.toolState,
     );
 
@@ -156,7 +181,12 @@ const useCanvasInteraction = (
         canvas,
         ctx,
         () =>
-          redrawPreviousShapes(ctx, canvasStateRef.current.drawnShapes, camera),
+          redrawPreviousShapes(
+            ctx,
+            canvasStateRef.current.drawnShapes,
+            cameraRef.current,
+            activeElementMapRef.current,
+          ),
         canvasStateRef.current.toolState,
       );
     };
@@ -165,14 +195,15 @@ const useCanvasInteraction = (
       if (textAreaRef.current) return;
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
-        selectedShapeRef.current
+        selectedElementRef.current
       ) {
         e.preventDefault();
         dispatchWithSocket({
           type: "DEL_SHAPE",
-          payload: selectedShapeRef.current.id,
+          payload: selectedElementRef.current.id,
         });
-        setSelectedShape(undefined);
+        // setSelectedElement(undefined);
+        selectedElementRef.current = undefined;
       }
 
       if (canvasState.toolState.currentTool === "text") return null;
@@ -234,83 +265,72 @@ const useCanvasInteraction = (
       }
     };
 
-    const handleDoubleClick = (e: MouseEvent) => {
-      const pos = getMousePos(canvasRef, { x: e.clientX, y: e.clientY });
-      const currentSelected = selectedShapeRef.current;
-      const currentState = canvasStateRef.current;
-      const tool = currentState.toolState.currentTool;
-      if (tool === "select") {
-        const newSelected = selectInteraction.handleSelectMouseDown(
-          pos,
-          currentSelected,
-          currentState,
-          activeElementMap,
-        );
-        if (newSelected?.type === "text") {
-          setTextEdit({
-            elementId: newSelected.id,
-            text: newSelected.text,
-            x: newSelected.startX,
-            y: newSelected.startY,
-          });
-        }
-        if (newSelected) {
-          setSelectedShape(newSelected);
-          canvasDispatch({
-            type: "UPD_SHAPE",
-            payload: newSelected,
-          });
-        } else {
-          setSelectedShape(undefined);
-        }
-        // } else {
-        //   if (selectedShape)
-        //     canvasDispatch({
-        //       type: "UPD_SHAPE",
-        //       payload: { ...selectedShape, isSelected: false },
-        //     });
-        //   setSelectedShape(undefined);
-        // }
-      }
-    };
+    // const handleDoubleClick = (e: MouseEvent) => {
+    //   const pos = getMousePos(canvasRef, { x: e.clientX, y: e.clientY });
+    //   const currentSelected = selectedElementRef.current;
+    //   const currentState = canvasStateRef.current;
+    //   const tool = currentState.toolState.currentTool;
+    //   if (tool === "select") {
+    //     const newSelected = selectInteraction.handleSelectMouseDown(
+    //       pos,
+    //       currentState,
+    //       selectedElementRef,
+    //       // activeElementMap,
+    //       sendActiveElementUpdate,
+    //     );
+    //     if (newSelected?.type === "text") {
+    //       setTextEdit({
+    //         elementId: newSelected.id,
+    //         text: newSelected.text,
+    //         x: newSelected.startX,
+    //         y: newSelected.startY,
+    //       });
+    //     }
+    //     if (newSelected) {
+    //       setSelectedElement(newSelected);
+    //       canvasDispatch({
+    //         type: "UPD_SHAPE",
+    //         payload: newSelected,
+    //       });
+    //     } else {
+    //       setSelectedElement(undefined);
+    //     }
+    //     // } else {
+    //     //   if (selectedShape)
+    //     //     canvasDispatch({
+    //     //       type: "UPD_SHAPE",
+    //     //       payload: { ...selectedShape, isSelected: false },
+    //     //     });
+    //     //   setSelectedElement(undefined);
+    //     // }
+    //   }
+    // };
     const onMouseDown = (e: MouseEvent) => {
-      console.log("down");
-      const pos = getMousePos(canvasRef, { x: e.clientX, y: e.clientY });
+      // const worldPos = screenToWorld(...getMousePos(canvasRef, { x: e.clientX, y: e.clientY }),cameraRef);
+      const pos = getMousePosOnWorld(
+        canvas,
+        { x: e.clientX, y: e.clientY },
+        cameraRef.current,
+      );
       const currentState = canvasStateRef.current;
-      const currentSelected = selectedShapeRef.current;
       const tool = currentState.toolState.currentTool;
-      console.log("current tool", tool);
+      console.log("Mouse down", "current tool :", tool);
 
       if (tool === "select") {
-        const newSelected = selectInteraction.handleSelectMouseDown(
-          screenToWorld(pos.x, pos.y, camera),
-          currentSelected,
+        const newshape = selectInteraction.handleSelectMouseDown(
+          pos,
           currentState,
-          activeElementMap,
+          selectedElementRef,
+          activeElementMapRef,
         );
-        //if currently selected shape,and no new shape,make if shape selected flase remove active element from socket for others too
-        if (currentSelected && !newSelected) {
-          dispatchWithSocket({
-            type: "UPD_SHAPE",
-            payload: { ...currentSelected, isSelected: false },
-          });
-          sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-        } else if (currentSelected && newSelected) {
-          dispatchWithSocket({
-            type: "UPD_SHAPE",
-            payload: { ...currentSelected, isSelected: false },
-          });
-          dispatchWithSocket({
-            type: "UPD_SHAPE",
-            payload: { ...newSelected, isSelected: true },
-          });
-        } else if (!currentSelected && newSelected) {
-          dispatchWithSocket({
-            type: "UPD_SHAPE",
-            payload: { ...newSelected, isSelected: true },
-          });
+
+        if (!newshape) {
+          (selectedElementRef.current = newshape), markStaticDirty();
+        } else if (newshape !== selectedElementRef.current) {
+          sendActiveElementUpdate({ type: "DRAG", payload: newshape }); //handles not inroom itself
+          selectedElementRef.current = newshape;
+          markStaticDirty();
         }
-        setSelectedShape(newSelected);
       } else if (tool === "text") {
         e.preventDefault();
         textAreaRef.current?.blur();
@@ -326,34 +346,41 @@ const useCanvasInteraction = (
         interactionState.eraseStateRef.current.isErasing = true;
       } else {
         drawInteraction.handleDrawMouseDown(
-          screenToWorld(pos.x, pos.y, camera),
+          pos,
           currentState.toolState,
+          selectedElementRef,
         );
+        markStaticDirty();
       }
+      // markStaticDirty();
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      const pos = getMousePos(canvasRef, { x: e.clientX, y: e.clientY });
+      const pos = getMousePosOnWorld(
+        canvas,
+        { x: e.clientX, y: e.clientY },
+        cameraRef.current,
+      );
       const currentState = canvasStateRef.current;
-      const currentSelected = selectedShapeRef.current;
       const tool = currentState.toolState.currentTool;
 
-      sendCursorState(screenToWorld(pos.x, pos.y, camera));
+      sendCursorState(screenToWorld(pos.x, pos.y, cameraRef.current));
 
       if (tool === "select") {
-        selectInteraction.handleSelectMouseMove(
-          screenToWorld(pos.x, pos.y, camera),
-          ctx,
-          currentSelected,
-          currentState,
-          camera,
+        const isDone = selectInteraction.handleSelectMouseMove(
+          pos,
+          // ctx,
+          selectedElementRef,
+          // currentState,
+          // cameraRef,
           sendActiveElementUpdate,
         );
+        // if (isDone) markStaticDirty();
       } else if (tool === "hand") {
         onPanMove(e);
       } else if (tool === "eraser") {
         if (!interactionState.eraseStateRef.current.isErasing) return;
-        const worldPos = screenToWorld(pos.x, pos.y, camera);
+        const worldPos = screenToWorld(pos.x, pos.y, cameraRef.current);
         console.log(worldPos);
         const clickedShape = [...currentState.drawnShapes].find(
           (shape: DrawElement) => isClickOnShape(worldPos, shape),
@@ -363,37 +390,44 @@ const useCanvasInteraction = (
         if (!clickedShape) return;
 
         // Inside handleSelectMouseDown, before allowing selection of a shape:
-        const isLockedByOther = [...activeElementMap.values()].some(
+        const isLockedByOther = [...activeElementMapRef.current.values()].some(
           (entry) => entry.element.id === clickedShape.id,
         );
 
-        if (!isLockedByOther && !clickedShape.isDeleted) {
-          canvasDispatch({
-            type: "UPD_SHAPE",
-            payload: { ...clickedShape, opacity: 0.2 },
-          });
-          interactionState.eraseStateRef.current.elementsToDelete.push(
-            clickedShape.id,
-          );
-        }
+        if (
+          isLockedByOther ||
+          clickedShape.id === selectedElementRef.current?.id
+        )
+          return;
+
+        canvasDispatch({
+          type: "UPD_SHAPE",
+          payload: { ...clickedShape, opacity: 0.2 },
+        });
+        interactionState.eraseStateRef.current.elementsToDelete.push(
+          clickedShape.id,
+        );
 
         return;
       } else {
         drawInteraction.handleDrawMouseMove(
-          screenToWorld(pos.x, pos.y, camera),
-          ctx,
+          pos,
+          // ctx,
           currentState.toolState,
           currentState.sideToolKitState,
-          currentState.drawnShapes,
-          currentSelected?.id,
-          camera,
+          selectedElementRef,
+          // currentState.drawnShapes,
+          // currentSelected,
+          // setSelectedElement,
+          // cameraRef,
         );
       }
 
-      cursor.updateCursor(
+      updateCursor(
+        canvas,
         tool,
-        screenToWorld(pos.x, pos.y, camera),
-        currentSelected as ShapeType,
+        pos,
+        selectedElementRef,
         currentState.drawnShapes,
         isPanning.current,
         false,
@@ -407,15 +441,20 @@ const useCanvasInteraction = (
       if (e.target === sideToolkit) {
         return;
       }
-      const pos = getMousePos(canvasRef, { x: e.clientX, y: e.clientY });
+      const pos = getMousePosOnWorld(
+        canvas,
+        { x: e.clientX, y: e.clientY },
+        cameraRef.current,
+      );
       const currentState = canvasStateRef.current;
-      const currentSelected = selectedShapeRef.current;
+      // const currentSelected = selectedElementRef.current;
       const tool = currentState.toolState.currentTool;
 
       if (tool === "select") {
         selectInteraction.handleSelectMouseUp(
-          screenToWorld(pos.x, pos.y, camera),
-          currentSelected,
+          pos,
+          selectedElementRef,
+          // selectedElementRef,
         );
       } else if (tool === "hand") {
         onPanEnd();
@@ -431,20 +470,26 @@ const useCanvasInteraction = (
         };
       } else {
         drawInteraction.handleDrawMouseUp(
-          screenToWorld(pos.x, pos.y, camera),
+          pos,
           currentState.toolState,
           currentState.sideToolKitState,
+          selectedElementRef,
+          // currentSelected,
+          // setSelectedElement,
         );
       }
 
-      redrawPreviousShapes(
-        ctx,
-        currentState.drawnShapes,
-        camera,
-        currentSelected,
-        currentSelected?.id,
-      );
-      canvasDispatch({ type: "CHANGE_TOOL", payload: "select" });
+      // redrawPreviousShapes(
+      //   ctx,
+      //   currentState.drawnShapes,
+      //   cameraRef,
+      //   activeElementMap,
+      //   currentSelected,
+      //   currentSelected?.id,
+      // );
+      if (canvasStateRef.current.toolState.currentTool !== "select") {
+        canvasDispatch({ type: "CHANGE_TOOL", payload: "select" });
+      }
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -473,9 +518,9 @@ const useCanvasInteraction = (
 
         const compressedBitmap = await createImageBitmap(compressedBlob);
         const newImage = createNewImage(
-          compressedBitmap.width / camera.z,
-          compressedBitmap.height / camera.z,
-          camera,
+          compressedBitmap.width / cameraRef.current.z,
+          compressedBitmap.height / cameraRef.current.z,
+          cameraRef.current,
           canvasState.toolState.currentColor,
           canvasState.toolState.strokeSize,
         );
@@ -498,7 +543,7 @@ const useCanvasInteraction = (
     };
 
     canvas.addEventListener("pointerdown", onMouseDown);
-    canvas.addEventListener("dblclick", handleDoubleClick);
+    // canvas.addEventListener("dblclick", handleDoubleClick);
     canvas.addEventListener("wheel", handleWheel);
     canvas.addEventListener("pointermove", onMouseMove);
     window.addEventListener("pointerup", onMouseUp);
@@ -506,17 +551,18 @@ const useCanvasInteraction = (
     window.addEventListener("keydown", onKeyDown);
     fileInput.addEventListener("change", handleFileInput);
 
-    redrawPreviousShapes(
-      ctx,
-      canvasStateRef.current.drawnShapes,
-      camera,
-      selectedShape,
-      selectedShape?.id,
-    );
+    // redrawPreviousShapes(
+    //   ctx,
+    //   canvasStateRef.current.drawnShapes,
+    //   cameraRef,
+    //   activeElementMap,
+    //   selectedShape,
+    //   selectedShape?.id,
+    // );
 
     return () => {
       canvas.removeEventListener("pointerdown", onMouseDown);
-      canvas.removeEventListener("dblclick", handleDoubleClick);
+      // canvas.removeEventListener("dblclick", handleDoubleClick);
       canvas.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("pointermove", onMouseMove);
       window.removeEventListener("pointerup", onMouseUp);
@@ -524,26 +570,27 @@ const useCanvasInteraction = (
       window.removeEventListener("keydown", onKeyDown);
       fileInput.removeEventListener("change", handleFileInput);
     };
-  }, [inRoom, camera]);
+  }, [inRoom, cameraRef]);
 
-  useEffect(() => {
-    selectedShapeRef.current = selectedShape;
-  }, [selectedShape]);
+  // useEffect(() => {
+  //   selectedElementRef.current = selectedElement;
+  // }, [selectedElement]);
 
-  useEffect(() => {
-    canvasStateRef.current = canvasState;
+  // useEffect(() => {
+  //   canvasStateRef.current = canvasState;
 
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    redrawPreviousShapes(
-      ctx,
-      canvasState.drawnShapes,
-      camera,
-      selectedShape,
-      selectedShape?.id,
-    );
-    console.log("redraw occured");
-  }, [canvasState]);
+  //   const ctx = canvasRef.current?.getContext("2d");
+  //   if (!ctx) return;
+  //   redrawPreviousShapes(
+  //     ctx,
+  //     canvasState.drawnShapes,
+  //     camera,
+  //     activeElementMap,
+  //     selectedShape,
+  //     selectedShape?.id,
+  //   );
+  //   console.log("redraw occured");
+  // }, [canvasState]);
 
   // useEffect(() => {
   //   const canvas = canvasRef.current;
@@ -553,9 +600,9 @@ const useCanvasInteraction = (
   // }, [isOpen]);
 
   return {
-    selectedShape,
-    setSelectedShape,
-    camera,
+    selectedElementRef,
+    // setSelectedElement,
+    cameraRef,
     cancelText,
     finishText,
     textEdit,

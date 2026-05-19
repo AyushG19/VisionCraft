@@ -135,5 +135,8 @@ export default function canvasReducer(
       },
     };
   }
+  if (action.type === "CLEAR_CANVAS") {
+    return { ...state, drawnShapes: [], ...pushHistory([]) };
+  }
   return state;
 }

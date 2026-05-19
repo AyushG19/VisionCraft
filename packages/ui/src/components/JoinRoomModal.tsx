@@ -17,7 +17,7 @@ type Props = {
   onExitRoom: () => void;
   onLogout: () => void;
   isChatOpen: boolean;
-  // inRoom: boolean;
+  clearCanvas: () => void;
   setTheme: (t: string) => void;
 };
 
@@ -50,6 +50,7 @@ export default function JoinRoomModal({
   onLogout,
   isChatOpen,
   setTheme,
+  clearCanvas,
 }: Props) {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -97,8 +98,8 @@ export default function JoinRoomModal({
         "room-chat": onChatToggle,
         "ai-chat": onChatToggle,
         "exit-room": onExitRoom,
-        // "clear-canvas":clearCanvas,
-        // "commands":showCommands,
+        "clear-canvas": clearCanvas,
+        // commands: showCommands,
         github: () => {
           window.open("https://github.com/AyushG19/VisionCraft.git", "_blank");
         },
@@ -170,11 +171,11 @@ export default function JoinRoomModal({
                       ${item.id === "exit-room" && "hover:bg-red text-global-shadow"} 
                       bg-secondary text-secondary-contrast text-xs
                       last:border-b-0
-                      last:rounded-bl-xl hover:bg-secondary-700 hover:text-primary-contrast
+                      last:rounded-bl-xl hover:bg-secondary-700 hover:text-secondary-contrast
                       transition-colors duration-100 ease-in-out cursor-pointer
                     `}
                         >
-                          <p className={`mr-2 text-xs capitalize `}>
+                          <p className={`mr-2 text-xs capitalize text-inherit`}>
                             {item.id === "ai-chat" && isChatOpen
                               ? "close chat"
                               : item.label}

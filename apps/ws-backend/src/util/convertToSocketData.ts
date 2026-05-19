@@ -53,5 +53,11 @@ export function convertToSocketData(data: RedisData): ServerSocketDataType {
         payload: { userId: data.userId },
       };
     }
+    case "CLEAR_CANVAS": {
+      return {
+        type: "CLEAR_CANVAS",
+        payload: { userId: data.userId },
+      };
+    }
   }
 }

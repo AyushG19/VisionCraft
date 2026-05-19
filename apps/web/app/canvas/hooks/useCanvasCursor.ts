@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { AllToolTypes, DrawElement, ShapeType } from "@repo/common";
+import { AllToolTypes, DrawElement } from "@repo/common";
 import { HandleName } from "../../lib/getHandles";
 import {
   isInsideSelectBound,
@@ -36,7 +36,7 @@ const useCanvasCursor = (
     (
       tool: AllToolTypes,
       worldPos: { x: number; y: number },
-      selectedShape: ShapeType | undefined,
+      selectedElementRef: React.RefObject<DrawElement | undefined>,
       allShapes: DrawElement[],
       isPanning: boolean,
       spaceHeld: boolean,
@@ -44,6 +44,7 @@ const useCanvasCursor = (
       isResizing: boolean,
     ) => {
       const canvas = canvasRef.current;
+      const selectedElement = selectedElementRef.current;
       if (!canvas) return;
 
       if (isPanning) {
@@ -67,9 +68,9 @@ const useCanvasCursor = (
 
       if (tool === "select") {
         // Check selected shape first (higher priority)
-        if (selectedShape && !selectedShape.isDeleted) {
-          const outlineBounds = getOutlineBounds(selectedShape);
-          const handleBounds = getBoundsForHandles(selectedShape);
+        if (selectedElement && !selectedElement.isDeleted) {
+          const outlineBounds = getOutlineBounds(selectedElement);
+          const handleBounds = getBoundsForHandles(selectedElement);
 
           // Check resize handles
           const hoveredHandle: HandleName | null = isPointInHandle(
@@ -77,7 +78,7 @@ const useCanvasCursor = (
             worldPos.y,
             handleBounds,
             undefined,
-            selectedShape,
+            selectedElement,
           );
 
           if (hoveredHandle) {
