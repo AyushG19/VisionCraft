@@ -6,7 +6,12 @@ import {
   finishPencil,
   updatePencil,
 } from "../utils/createNewShape";
-import { DrawElement, PointType, ToolKitType } from "@repo/common";
+import {
+  ClientShapeManipulation,
+  DrawElement,
+  PointType,
+  ToolKitType,
+} from "@repo/common";
 import useInteractionState from "./useInteractionState";
 
 type UseInteractionStateReturn = ReturnType<typeof useInteractionState>;
@@ -53,7 +58,7 @@ const useDrawInteraction = (
       // drawnShapes: DrawElement[],
       selectedElementRef: React.RefObject<DrawElement | undefined>,
       // camera: Camera,
-      // setSelectedElement: (element: DrawElement) => void,
+      sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
     ) => {
       if (!interaction.current.isDrawing) return;
 
@@ -67,10 +72,12 @@ const useDrawInteraction = (
         )
           return;
 
-        selectedElementRef.current = updatePencil(
+        const newPencilElement = updatePencil(
           worldPos,
           selectedElementRef.current,
         );
+        sendActiveElementUpdate({ type: "DRAG", payload: newPencilElement });
+        selectedElementRef.current = newPencilElement;
 
         // Redraw with the growing pencil shape appended
         // redrawPreviousShapes(
@@ -84,12 +91,15 @@ const useDrawInteraction = (
       }
 
       // Regular shapes (preview from start→current)
-      selectedElementRef.current = createNewShape(
+      const newElement = createNewShape(
         toolState,
         sideToolKit,
         interaction.current.startPos,
         worldPos,
       );
+
+      sendActiveElementUpdate({ type: "DRAG", payload: newElement });
+      selectedElementRef.current = newElement;
 
       // setSelectedElement(previewElement);
       // redrawPreviousShapes(
@@ -130,7 +140,6 @@ const useDrawInteraction = (
             type: "ADD_SHAPE",
             payload: finalShape,
           });
-          selectedElementRef.current = finalShape;
         }
         return;
       }
@@ -149,7 +158,7 @@ const useDrawInteraction = (
       });
 
       stopDrawing();
-      selectedElementRef.current = undefined;
+
       // setSelectedElement();
     },
     [interaction, stopDrawing, dispatchWithSocket],

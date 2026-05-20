@@ -23,9 +23,9 @@ import redrawPreviousShapes, {
 import useInteractionState from "./useInteractionState";
 import useSelectInteraction from "./useSelectInteraction";
 import useDrawInteraction from "./useDrawingInteraction";
-import { getMousePosOnWorld } from "../helper/coordinate.helper";
+import { getMousePos, getMousePosOnWorld } from "../helper/coordinate.helper";
 import { Camera, useCamera } from "./useCamera";
-import { screenToWorld } from "../../lib/math";
+import { screenToWorld, worldToScreen } from "../../lib/math";
 import { storeImg } from "../../services/canvas.service";
 import { set } from "idb-keyval";
 import { createNewImage, createNewText } from "../utils/createNewShape";
@@ -98,11 +98,11 @@ const useCanvasInteraction = (
       textState.fontSize,
       textState.fontFamily,
     );
-
+    const worldPos = screenToWorld(textEdit.x, textEdit.y, cameraRef.current);
     const element = createNewText(
       canvasState.toolState,
       textState,
-      screenToWorld(textEdit.x, textEdit.y, cameraRef.current),
+      worldPos,
       textEdit.text,
       width / cameraRef.current.z,
       height / cameraRef.current.z,
@@ -324,9 +324,16 @@ const useCanvasInteraction = (
           activeElementMapRef,
         );
 
+        //setting shape to undefined
         if (!newshape) {
-          (selectedElementRef.current = newshape), markStaticDirty();
-        } else if (newshape !== selectedElementRef.current) {
+          sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+          selectedElementRef.current = newshape;
+          markStaticDirty();
+        } else if (newshape === selectedElementRef.current) {
+          sendActiveElementUpdate({ type: "DESELECT", payload: {} }); //handles not inroom itself
+          selectedElementRef.current = undefined;
+          markStaticDirty();
+        } else {
           sendActiveElementUpdate({ type: "DRAG", payload: newshape }); //handles not inroom itself
           selectedElementRef.current = newshape;
           markStaticDirty();
@@ -334,11 +341,15 @@ const useCanvasInteraction = (
       } else if (tool === "text") {
         e.preventDefault();
         textAreaRef.current?.blur();
+
+        const screenPos = { x: e.clientX, y: e.clientY }; // raw screen coords
+        const canvasPos = getMousePos(canvasRef, screenPos);
+
         setTextEdit(() => ({
           elementId: "1",
           text: "",
-          x: pos.x,
-          y: pos.y,
+          x: canvasPos.x,
+          y: canvasPos.y,
         }));
       } else if (tool === "hand") {
         onPanStart(e);
@@ -380,10 +391,10 @@ const useCanvasInteraction = (
         onPanMove(e);
       } else if (tool === "eraser") {
         if (!interactionState.eraseStateRef.current.isErasing) return;
-        const worldPos = screenToWorld(pos.x, pos.y, cameraRef.current);
-        console.log(worldPos);
+        // const worldPos = screenToWorld(pos.x, pos.y, cameraRef.current);
+        // console.log(worldPos);
         const clickedShape = [...currentState.drawnShapes].find(
-          (shape: DrawElement) => isClickOnShape(worldPos, shape),
+          (shape: DrawElement) => isClickOnShape(pos, shape),
         );
 
         console.log(clickedShape);
@@ -416,6 +427,7 @@ const useCanvasInteraction = (
           currentState.toolState,
           currentState.sideToolKitState,
           selectedElementRef,
+          sendActiveElementUpdate,
           // currentState.drawnShapes,
           // currentSelected,
           // setSelectedElement,
@@ -456,14 +468,16 @@ const useCanvasInteraction = (
           selectedElementRef,
           // selectedElementRef,
         );
+        sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+        selectedElementRef.current = undefined;
       } else if (tool === "hand") {
         onPanEnd();
       } else if (tool === "eraser") {
-        interactionState.eraseStateRef.current.elementsToDelete.forEach(
-          (ele) => {
-            canvasDispatch({ type: "DEL_SHAPE", payload: ele });
-          },
-        );
+        dispatchWithSocket({
+          type: "BULK_DEL_SHAPE",
+          payload: interactionState.eraseStateRef.current.elementsToDelete,
+        });
+
         interactionState.eraseStateRef.current = {
           isErasing: false,
           elementsToDelete: [],

@@ -38,7 +38,7 @@ const ToolIcon = ({
   if (toolInfo.id === "image") {
     return (
       <div
-        className={`w-6 h-6 lg:w-9 lg:h-9 relative flex items-center justify-center shadow-shinysecondary-mobile lg:shadow-shinysecondary rounded-md lg:rounded-lg bg-secondary pointer-events-none outline-1 outline-global-shadow scale-[97%] hover:scale-100 ${currTool === toolInfo.id ? "shadow-shinyshadow-pressed button-active" : "button-press"}  text-secondary-contrast`}
+        className={`w-6 h-6 lg:w-9 lg:h-9 relative flex items-center justify-center shadow-shinysecondary-mobile lg:shadow-shinysecondary rounded-md lg:rounded-lg bg-secondary pointer-events-none outline-1 outline-global-shadow scale-[97%] hover:scale-100 ${currTool === toolInfo.id ? "shadow-shinyshadow-pressed button-active" : "button-press"}  text-secondary-contrast `}
       >
         <label>
           <input
@@ -70,11 +70,11 @@ const ToolIcon = ({
           onClick={() => onSelectTool(toolInfo.id)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`w-6 h-6 lg:w-9 lg:h-9 p-0 relative cursor-pointer z-10 outline-1 outline-global-shadow shadow-shinysecondary-mobile lg:shadow-shinysecondary rounded-md lg:rounded-lg scale-[97%] hover:scale-100 ${
+          className={`w-6 h-6 lg:w-9 lg:h-9 p-0 relative cursor-pointer z-10 outline-1 outline-global-shadow shadow-shinysecondary-mobile lg:shadow-shinysecondary rounded-md lg:rounded-lg scale-100 ${
             toolInfo.id !== "color" && currTool === toolInfo.id
-              ? "shadow-shinyshadow-pressed button-active"
+              ? "shadow-shinyshadow-pressed button-active translate-[1px]"
               : "button-press "
-          } text-secondary-contrast`}
+          } text-secondary-contrast active:translate-[1px]`}
         >
           {toolInfo.id === "color" && isHovered && (
             <ColorSelector
@@ -82,7 +82,7 @@ const ToolIcon = ({
               setSelectedColor={onSelectColor}
             />
           )}
-          <span className="hidden lg:inline absolute right-[3px] bottom-1 opacity-50 text-xs font-handlee cursor-event-none">
+          <span className="hidden lg:inline absolute right-[3px] bottom-[3px] opacity-50 text-xs font-handlee cursor-event-none">
             {toolInfo.keyBind}
           </span>
           <toolInfo.icon
@@ -90,9 +90,12 @@ const ToolIcon = ({
             fill={
               toolInfo.id === "color"
                 ? `oklch(${initialColor.l} ${initialColor.c} ${initialColor.h})`
-                : "none"
+                : toolInfo.id === currTool
+                  ? "currentColor"
+                  : "none"
             }
-            className="w-[10px] h-[10px] md:w-[14px] md:h-[14px] "
+            fillOpacity={toolInfo.id === currTool ? 0.2 : 1}
+            className={`w-[10px] h-[10px] lg:w-[14px] lg:h-[14px]`}
             stroke={toolInfo.id === "color" ? 1 : 1.5}
           />
         </Button>

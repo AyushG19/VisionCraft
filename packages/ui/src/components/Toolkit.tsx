@@ -259,7 +259,7 @@ const Toolkit = ({
             key={i}
             aria-label={name}
             variant={"secondary"}
-            className={`w-7 h-7 lg:w-9 lg:h-9 p-0 flex items-center justify-center cursor-pointer shadow-shinysecondary text-secondary-contrast button-press-active transition-transform ease-in-out duration-100 outline-1 outline-global-shadow ${i === 0 ? "rounded-r-none" : "rounded-l-none"}`}
+            className={`w-7 h-7 lg:w-9 lg:h-9 p-0 flex items-center justify-center cursor-pointer shadow-shinysecondary text-secondary-contrast button-press-active transition-transform ease-in-out duration-100 outline-1 outline-global-shadow button-press ${i === 0 ? "rounded-r-none" : "rounded-l-none"}`}
             onClick={() => handleClick(name)}
           >
             {i === 0 ? (

@@ -47,7 +47,8 @@ export type Action =
   | { type: "CHANGE_BRUSHSIZE"; payload: number }
   | { type: "UPD_EDITOR"; payload: Partial<SideToolKitState> }
   | { type: "UPD_TEXT_STATE"; payload: Partial<TextStateType> }
-  | { type: "CLEAR_CANVAS" };
+  | { type: "CLEAR_CANVAS" }
+  | { type: "BULK_DEL_SHAPE"; payload: string[] };
 
 export interface ChatModalProps {
   wsRef: RefObject<WebSocket | null>;

@@ -138,5 +138,15 @@ export default function canvasReducer(
   if (action.type === "CLEAR_CANVAS") {
     return { ...state, drawnShapes: [], ...pushHistory([]) };
   }
+  if (action.type === "BULK_DEL_SHAPE") {
+    const newElemensArr = state.drawnShapes.filter(
+      (e) => !action.payload.includes(e.id),
+    );
+    return {
+      ...state,
+      drawnShapes: newElemensArr,
+      ...pushHistory(newElemensArr),
+    };
+  }
   return state;
 }

@@ -92,7 +92,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
 
   return (
     <div
-      className={`font-google-sans-code font-medium relative flex flex-col items-center justify-center gap-3 p-6 ${isLoading ? "pointer-events-none" : "pointer-events-auto"}`}
+      className={`font-google-sans-code font-medium relative flex flex-col items-center justify-center w-auto gap-3 p-6 ${isLoading ? "pointer-events-none" : "pointer-events-auto"}`}
     >
       {/* input boxes for code */}
       <div className="flex gap-2">
@@ -113,44 +113,35 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
       </div>
 
       {/* button to submit */}
-      <div className="flex gap-2.5 w-full h-8">
+      <div className="flex gap-2 w-full h-8">
         {/* button to cancel */}
         <Button
           onClick={() => toggleFunction()}
           size={"sm"}
           variant={"iconic"}
-          className=" font-google-sans-code font-light bg-red outline-1 outline-global-shadow shadow-pressed w-20 rounded-sm  button-press-active capitalize h-full group"
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-red shadow-primary active:shaow-pressed w-20 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
         >
-          <p className="group-active:translate-x-0.5 group-active:translate-y-0.5 ">
-            cancel
-          </p>
+          <p>cancel</p>
           {/* <IconX stroke={1.6} className="ml-1" size={18} color="black" /> */}
         </Button>
         <Button
           onClick={() => handlePaste()}
           variant={"iconic"}
-          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-accent shadow-pressed flex flex-1 text-sm items-center justify-center px-2 rounded-sm capitalize  button-press-active cursor-pointer group"
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-secondary-700 shadow-primary active:shaow-pressed flex-1 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
         >
-          <p className="group-active:translate-x-0.5 group-active:translate-y-0.5 ">
-            paste
-          </p>
-          <IconClipboard
-            stroke={1.6}
-            className="ml-1"
-            size={18}
-            color="black"
-          />
+          <div className="flex items-center gap-1">
+            <p>paste</p>
+            <IconClipboard stroke={1.6} size={18} color="black" />
+          </div>
         </Button>
         <Button
           onClick={() => verifyJoin(code.join(""))}
           size={"sm"}
           disabled={!code[3]}
           variant={"iconic"}
-          className={`in-disabled:cursor-not-allowed bg-secondary font-google-sans-code font-light shadow-pressed rounded-sm w-20 capitalize h-full button-press-active text-secondary-contrast group`}
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-accent shadow-primary active:shaow-pressed w-20 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] hover:cursor-not-allowed"
         >
-          <p className="group-active:translate-x-0.5 group-active:translate-y-0.5 ">
-            {isLoading ? "..." : "join"}
-          </p>
+          <p>{isLoading ? "..." : "join"}</p>
           {/* <IconDoorEnter
             stroke={1.6}
             className="ml-1"

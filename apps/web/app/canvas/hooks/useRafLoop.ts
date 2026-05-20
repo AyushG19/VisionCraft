@@ -79,6 +79,8 @@ const useRafLoop = ({
               shape.id === selectedElementRef.current.id
             )
               continue;
+
+            if (activeElementMapRef.current.has(shape.id)) return;
             drawShape(oc as any, shape, cam, selectedElementRef.current?.id);
           }
 

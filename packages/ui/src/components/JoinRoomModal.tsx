@@ -119,7 +119,7 @@ export default function JoinRoomModal({
       <div
         ref={menuRef}
         className={`
-          fixed right-0 top-14 lg:top-6 z-40 flex flex-col items-end font-google-sans-code 
+          fixed right-0 top-14 lg:top-6 z-40 flex flex-col items-end font-google-sans-code
           transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${isChatOpen ? " lg:-translate-x-[360px]" : "translate-x-0"}
         `}
@@ -128,9 +128,9 @@ export default function JoinRoomModal({
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={`
-            flex items-center justify-end w-8 h-8 
+            flex items-center justify-end w-8 h-8
             bg-primary text-primary-contrast rounded-l-xl outline-1 outline-global-shadow cursor-pointer
-            transition-all 
+            transition-all
             ${isMenuOpen ? "!rounded-bl-none px-4 md:h-10 md:w-full " : "pr-2 md:h-10 md:w-10 delay-75"}
           `}
         >
@@ -168,7 +168,7 @@ export default function JoinRoomModal({
                           onClick={() => handleAction(item.id)}
                           className={`
                             flex items-center justify-end w-32 md:w-full h-auto py-2 md:py-2.5 px-3
-                      ${item.id === "exit-room" && "hover:bg-red text-global-shadow"} 
+                      ${item.id === "exit-room" && "hover:bg-red text-global-shadow"}
                       bg-secondary text-secondary-contrast text-xs
                       last:border-b-0
                       last:rounded-bl-xl hover:bg-secondary-700 hover:text-secondary-contrast
@@ -218,7 +218,7 @@ export default function JoinRoomModal({
               initial={{ opacity: 0, scale: 0.9, x: "-50%", y: "-50%" }}
               animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
               exit={{ opacity: 0, scale: 0.9, x: "-50%", y: "-50%" }}
-              className="fixed top-1/2 left-1/2 z-50 bg-primary outline-1 outline-global-shadow rounded-md shadow-xl w-[90vw] max-w-sm"
+              className="fixed top-1/2 left-1/2 z-50 bg-primary outline-1 outline-global-shadow rounded-md shadow-xl w-fit max-w-lg"
             >
               <CodeInputBox
                 verifyJoin={(code) => withLoading(() => verifyJoin(code))}
