@@ -7,11 +7,14 @@ import {
 } from "@repo/common";
 import { DragStateType, ResizeStateType } from "../types";
 
-export const createDraggedShape = (
+export const createDragedElement = (
   dragState: DragStateType,
   currMousePos: { x: number; y: number },
   shape: DrawElement,
 ): DrawElement => {
+  const newX = currMousePos.x - dragState.offsetX;
+  const newY = currMousePos.y - dragState.offsetY;
+
   if (
     shape.type === "rectangle" ||
     shape.type === "ellipse" ||
@@ -20,71 +23,64 @@ export const createDraggedShape = (
   ) {
     const dx = shape.endX - shape.startX;
     const dy = shape.endY - shape.startY;
-    const clampedX = currMousePos.x - dragState.offsetX;
-    const clampedY = currMousePos.y - dragState.offsetY;
-
     return {
       ...shape,
-      startX: clampedX,
-      startY: clampedY,
-      endX: clampedX + dx,
-      endY: clampedY + dy,
-    };
-  } else if (shape.type === "text" || shape.type === "image") {
-    const dx = shape.width;
-    const dy = shape.height;
-    const clampedX = currMousePos.x - dragState.offsetX;
-    const clampedY = currMousePos.y - dragState.offsetY;
-
-    return {
-      ...shape,
-      startX: clampedX,
-      startY: clampedY,
-    };
-  } else if (shape.type === "arrow" || shape.type === "line") {
-    const dx = shape.points[2]!.x;
-    const dy = shape.points[2]!.y;
-    const clampedX = currMousePos.x - dragState.offsetX;
-    const clampedY = currMousePos.y - dragState.offsetY;
-
-    return {
-      ...shape,
-      startX: clampedX,
-      startY: clampedY,
+      startX: newX,
+      startY: newY,
+      endX: newX + dx,
+      endY: newY + dy,
     };
   }
+
+  if (shape.type === "text" || shape.type === "image") {
+    return { ...shape, startX: newX, startY: newY };
+  }
+
+  if (shape.type === "arrow" || shape.type === "line") {
+    const dx = shape.points[2]!.x - shape.startX;
+    const dy = shape.points[2]!.y - shape.startY;
+    return {
+      ...shape,
+      startX: newX,
+      startY: newY,
+      points: shape.points.map((p, i) =>
+        i === 2 ? { x: newX + dx, y: newY + dy } : p,
+      ),
+    };
+  }
+
   return shape;
-  // const dx = shape.endX - shape.startX;
-  // const dy = shape.endY - shape.startY;
-  // const clampedX = Math.max(
-  //   0,
-  //   Math.min(window.innerWidth - dx, currMousePos.x - dragState.offsetX),
-  // );
-  // const clampedY = Math.max(
-  //   0,
-  //   Math.min(window.innerHeight - dy, currMousePos.y - dragState.offsetY),
-  // );
-
-  // // if (shape.type === "PENCIL" && Array.isArray(shape.points)) {
-  // //   const newPointsArray = shape.points.map((point) => ({
-  // //     x: point.x - dragState.offsetX,
-  // //     y: point.y - dragState.offsetY,
-  // //   }));
-
-  // //   return {
-  // //     ...shape,
-  // //     points: newPointsArray,
-  // //   };
-  // // }
-
-  // return {
-  //   ...shape,
-  //   startX: clampedX,
-  //   startY: clampedY,
-  //   endX: clampedX + dx,
-  //   endY: clampedY + dy,
-  // };
 };
+// const dx = shape.endX - shape.startX;
+// const dy = shape.endY - shape.startY;
+// const clampedX = Math.max(
+//   0,
+//   Math.min(window.innerWidth - dx, currMousePos.x - dragState.offsetX),
+// );
+// const clampedY = Math.max(
+//   0,
+//   Math.min(window.innerHeight - dy, currMousePos.y - dragState.offsetY),
+// );
+
+// // if (shape.type === "PENCIL" && Array.isArray(shape.points)) {
+// //   const newPointsArray = shape.points.map((point) => ({
+// //     x: point.x - dragState.offsetX,
+// //     y: point.y - dragState.offsetY,
+// //   }));
+
+// //   return {
+// //     ...shape,
+// //     points: newPointsArray,
+// //   };
+// // }
+
+// return {
+//   ...shape,
+//   startX: clampedX,
+//   startY: clampedY,
+//   endX: clampedX + dx,
+//   endY: clampedY + dy,
+// };
 
 type ResizableShape =
   | ShapeType // rectangle, ellipse, triangle
@@ -101,7 +97,7 @@ function isResizableShape(shape: DrawElement): shape is ResizableShape {
   );
 }
 
-export const createResizedShape = (
+export const createResizedElement = (
   resizeState: ResizeStateType,
   currPos: PointType,
   shape: DrawElement,

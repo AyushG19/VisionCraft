@@ -80,7 +80,7 @@ const useRafLoop = ({
             )
               continue;
 
-            if (activeElementMapRef.current.has(shape.id)) return;
+            if (activeElementMapRef.current.has(shape.id)) continue;
             drawShape(oc as any, shape, cam, selectedElementRef.current?.id);
           }
 
@@ -103,13 +103,7 @@ const useRafLoop = ({
         );
 
         for (const [, { element, userId }] of activeElementMapRef.current) {
-          drawShape(
-            ctx,
-            element,
-            cam,
-            selectedElementRef.current?.id,
-            getUserColor(userId),
-          );
+          drawShape(ctx, element, cam, element.id, getUserColor(userId));
         }
 
         if (selectedElementRef.current) {

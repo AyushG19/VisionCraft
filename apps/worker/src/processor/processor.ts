@@ -1,10 +1,16 @@
-import { addChat, deleteElement, upsertElement } from "@repo/db";
+import {
+  addChat,
+  deleteAllElements,
+  deleteElement,
+  upsertElement,
+} from "@repo/db";
 import { CHAT_JOBS, ELEMENT_JOBS, Job, UnrecoverableError } from "@repo/queue";
 import {
   ElementUpsertPayloadSchema,
   ElementDeletePayloadSchema,
   ZodError,
   ChatUpsertPayloadSchema,
+  ElementDeleteAllPayloadSchema,
 } from "@repo/common";
 
 export async function processor(job: Job): Promise<void> {
@@ -17,14 +23,24 @@ export async function processor(job: Job): Promise<void> {
       }
 
       case ELEMENT_JOBS.DELETE: {
-        const { elementId } = ElementDeletePayloadSchema.parse(job.data);
-        await deleteElement(elementId);
+        const { roomId, elementId } = ElementDeletePayloadSchema.parse(
+          job.data,
+        );
+        await deleteElement(roomId, elementId);
         break;
       }
 
       case CHAT_JOBS.UPSERT: {
         const { Message, roomId } = ChatUpsertPayloadSchema.parse(job.data);
         await addChat(roomId, Message);
+        break;
+      }
+
+      case ELEMENT_JOBS.DELETE_ALL: {
+        const { roomId, elementIds } = ElementDeleteAllPayloadSchema.parse(
+          job.data,
+        );
+        await deleteAllElements(roomId, elementIds);
         break;
       }
 

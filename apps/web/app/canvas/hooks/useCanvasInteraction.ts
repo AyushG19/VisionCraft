@@ -122,11 +122,13 @@ const useCanvasInteraction = (
   const selectInteraction = useSelectInteraction(
     interactionState,
     dispatchWithSocket,
+    sendActiveElementUpdate,
   );
 
   const drawInteraction = useDrawInteraction(
     interactionState,
     dispatchWithSocket,
+    sendActiveElementUpdate,
   );
 
   const canvasStateRef = useRef(canvasState);
@@ -324,13 +326,11 @@ const useCanvasInteraction = (
           activeElementMapRef,
         );
 
+        console.log("Res from mouse down: ", newshape);
         //setting shape to undefined
         if (!newshape) {
+          console.log("In !newshape mouse down");
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-          selectedElementRef.current = newshape;
-          markStaticDirty();
-        } else if (newshape === selectedElementRef.current) {
-          sendActiveElementUpdate({ type: "DESELECT", payload: {} }); //handles not inroom itself
           selectedElementRef.current = undefined;
           markStaticDirty();
         } else {
@@ -359,6 +359,7 @@ const useCanvasInteraction = (
         drawInteraction.handleDrawMouseDown(
           pos,
           currentState.toolState,
+          currentState.sideToolKitState,
           selectedElementRef,
         );
         markStaticDirty();
@@ -375,7 +376,7 @@ const useCanvasInteraction = (
       const currentState = canvasStateRef.current;
       const tool = currentState.toolState.currentTool;
 
-      sendCursorState(screenToWorld(pos.x, pos.y, cameraRef.current));
+      sendCursorState(pos);
 
       if (tool === "select") {
         const isDone = selectInteraction.handleSelectMouseMove(
@@ -384,7 +385,7 @@ const useCanvasInteraction = (
           selectedElementRef,
           // currentState,
           // cameraRef,
-          sendActiveElementUpdate,
+          // sendActiveElementUpdate,
         );
         // if (isDone) markStaticDirty();
       } else if (tool === "hand") {
@@ -427,7 +428,7 @@ const useCanvasInteraction = (
           currentState.toolState,
           currentState.sideToolKitState,
           selectedElementRef,
-          sendActiveElementUpdate,
+          // sendActiveElementUpdate,
           // currentState.drawnShapes,
           // currentSelected,
           // setSelectedElement,
@@ -468,8 +469,6 @@ const useCanvasInteraction = (
           selectedElementRef,
           // selectedElementRef,
         );
-        sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-        selectedElementRef.current = undefined;
       } else if (tool === "hand") {
         onPanEnd();
       } else if (tool === "eraser") {
@@ -491,16 +490,10 @@ const useCanvasInteraction = (
           // currentSelected,
           // setSelectedElement,
         );
+        sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+        selectedElementRef.current = undefined;
       }
 
-      // redrawPreviousShapes(
-      //   ctx,
-      //   currentState.drawnShapes,
-      //   cameraRef,
-      //   activeElementMap,
-      //   currentSelected,
-      //   currentSelected?.id,
-      // );
       if (canvasStateRef.current.toolState.currentTool !== "select") {
         canvasDispatch({ type: "CHANGE_TOOL", payload: "select" });
       }

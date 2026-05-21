@@ -20,6 +20,15 @@ export type ElementDeletePayloadSchemaType = z.infer<
   typeof ElementDeletePayloadSchema
 >;
 
+export const ElementDeleteAllPayloadSchema = z.object({
+  roomId: z.string(),
+  elementIds: z.array(z.string()),
+});
+
+export type ElementDeleteAllPayload = z.infer<
+  typeof ElementDeleteAllPayloadSchema
+>;
+
 export const ChatUpsertPayloadSchema = z.object({
   roomId: z.string(),
   Message: ServerMessage,

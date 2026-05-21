@@ -12,8 +12,8 @@ import {
 } from "../utils/getBoundsHelpers";
 import { CanvasState, Action, ActiveElementMapType } from "../types";
 import {
-  createDraggedShape,
-  createResizedShape,
+  createDragedElement,
+  createResizedElement,
 } from "../utils/createTempShapeHelper";
 import { HandleName } from "../../lib/getHandles";
 import useInteractionState from "./useInteractionState";
@@ -21,20 +21,10 @@ import useInteractionState from "./useInteractionState";
 
 type UseInteractionStateReturn = ReturnType<typeof useInteractionState>;
 
-function isLockedByOther(
-  shapeId: string,
-  myUserId: string,
-  activeMap: ActiveElementMapType,
-) {
-  for (const [userId, entry] of activeMap) {
-    if (entry.element.id === shapeId && entry.userId !== myUserId) return true;
-  }
-  return false;
-}
-
 const useSelectInteraction = (
   interactionState: UseInteractionStateReturn,
   dispatchWithSocket: (action: Action) => void,
+  sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
 ) => {
   const {
     interaction,
@@ -44,6 +34,17 @@ const useSelectInteraction = (
     getResizeState,
     resetDragAndResize,
   } = interactionState;
+
+  const updateAndSend = (
+    currentElement: DrawElement,
+    newElement: DrawElement,
+    type: "DRAG" | "RESIZE" | "UPD_SHAPE",
+  ) => {
+    Object.assign(currentElement, newElement);
+    if (type === "UPD_SHAPE")
+      dispatchWithSocket({ type, payload: { ...currentElement } });
+    else sendActiveElementUpdate({ type, payload: { ...currentElement } });
+  };
 
   // useSocketWithWhiteboard.ts
   // const { currentUser } = useUser(); // null when not logged in
@@ -170,30 +171,21 @@ const useSelectInteraction = (
       selectedElementRef: React.RefObject<DrawElement | undefined>,
       // canvasState: CanvasState,
       // camera: Camera,
-      sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
+      // sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
       // setSelectedElement: (element?: DrawElement) => void,
     ): boolean => {
       if (!selectedElementRef.current) return false;
-
+      console.log("in select move");
       //  Drag preview
       if (interaction.current.isDragging) {
         const dragState = getDragState();
-        const previewShape = createDraggedShape(
+        const previewShape = createDragedElement(
           dragState,
           worldPos,
           selectedElementRef.current,
         );
-        selectedElementRef.current = previewShape;
 
-        // setSelectedElement(previewShape);
-        // redrawPreviousShapes(
-        //   ctx,
-        //   canvasState.drawnShapes,
-        //   camera,
-        //   previewShape,
-        //   selectedElementRef.current.id,
-        // );
-        sendActiveElementUpdate({ type: "DRAG", payload: previewShape });
+        updateAndSend(selectedElementRef.current, previewShape, "DRAG");
         return true;
       }
 
@@ -203,22 +195,13 @@ const useSelectInteraction = (
         interaction.current.resizeDirection !== null
       ) {
         const resizeState = getResizeState();
-        const previewShape = createResizedShape(
+        const previewShape = createResizedElement(
           resizeState,
           worldPos,
           selectedElementRef.current,
         );
-        selectedElementRef.current = previewShape;
-        // setSelectedElement(previewShape);
 
-        // redrawPreviousShapes(
-        //   ctx,
-        //   canvasState.drawnShapes,
-        //   camera,
-        //   previewShape,
-        //   currentSelected.id,
-        // );
-        sendActiveElementUpdate({ type: "RESIZE", payload: previewShape });
+        updateAndSend(selectedElementRef.current, previewShape, "RESIZE");
         return true;
       }
 
@@ -241,41 +224,32 @@ const useSelectInteraction = (
         return false;
       }
 
-      // ─── Commit drag ──────────────────────────────────────────
+      //  Commit drag
       if (interaction.current.isDragging) {
         const dragState = getDragState();
-        const tempElement = createDraggedShape(
+        const tempElement = createDragedElement(
           dragState,
           worldPos,
           selectedElementRef.current,
         );
 
-        dispatchWithSocket({
-          type: "UPD_SHAPE",
-          payload: tempElement,
-        });
-        selectedElementRef.current = tempElement;
+        updateAndSend(selectedElementRef.current, tempElement, "UPD_SHAPE");
         resetDragAndResize();
         return true;
-        // setSelectedElement(finalShape);
       }
 
-      // ─── Commit resize ────────────────────────────────────────
+      //  Commit resize
       if (interaction.current.isResizing) {
         const resizeState = getResizeState();
-        selectedElementRef.current = createResizedShape(
+        const tempElement = createResizedElement(
           resizeState,
           worldPos,
           selectedElementRef.current,
         );
 
-        dispatchWithSocket({
-          type: "UPD_SHAPE",
-          payload: selectedElementRef.current,
-        });
+        updateAndSend(selectedElementRef.current, tempElement, "UPD_SHAPE");
         resetDragAndResize();
         return true;
-        // setSelectedElement(finalShape);
       }
       return false;
     },

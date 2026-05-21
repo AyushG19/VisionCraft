@@ -45,8 +45,21 @@ export async function upsertElement(element: DrawElement, roomId: string) {
     },
   });
 }
-export async function deleteElement(elementId: string): Promise<void> {
-  await db.canvasElements.delete({ where: { id: elementId } });
+
+export async function deleteAllElements(
+  roomId: string,
+  elementIds: string[],
+): Promise<void> {
+  await db.canvasElements.deleteMany({
+    where: { id: { in: elementIds }, roomId },
+  });
+}
+
+export async function deleteElement(
+  roomId: string,
+  elementId: string,
+): Promise<void> {
+  await db.canvasElements.delete({ where: { id: elementId, roomId } });
 }
 
 export async function deleteElementByRoom(roomId: string): Promise<void> {

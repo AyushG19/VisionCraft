@@ -54,11 +54,17 @@ const DelShapeSchema = z.object({
   type: z.literal("DEL_SHAPE"),
   payload: z.string(),
 });
+const DelManyShapeSchema = z.object({
+  type: z.literal("BULK_DEL_SHAPE"),
+  payload: z.array(z.string()),
+});
 
 export type WebSocketShapeType =
   | z.infer<typeof AddShapeSchema>
   | z.infer<typeof UpdShapeSchema>
-  | z.infer<typeof DelShapeSchema>;
+  | z.infer<typeof DelShapeSchema>
+  | z.infer<typeof DelManyShapeSchema>
+  | z.infer<typeof ClientClearCanvasSchema>;
 
 const ServerResizeSchema = z.object({
   type: z.literal("RESIZE"),
@@ -135,10 +141,16 @@ export const ServerClearCanvasSchema = z.object({
   payload: z.object({ userId: z.string() }),
 });
 
+export const BulkDelSchema = z.object({
+  type: z.literal("BULK_DEL_SHAPE"),
+  payload: z.array(z.string()),
+});
+
 export const ServerSocketData = z.discriminatedUnion("type", [
   AddShapeSchema,
   UpdShapeSchema,
   DelShapeSchema,
+  BulkDelSchema,
   ServerChatSchema,
   ServerUserJoinedSchema,
   ServerUserLeftSchema,
@@ -155,6 +167,7 @@ export const ClientSocketData = z.discriminatedUnion("type", [
   AddShapeSchema,
   UpdShapeSchema,
   DelShapeSchema,
+  BulkDelSchema,
   ClientChatSchema,
   ClientJoinRoomSchema,
   ClientLeaveRoomSchema,

@@ -224,6 +224,14 @@ export const useSocketWithWhiteboard = (): {
         case "DEL_SHAPE":
           send("DEL_SHAPE", action.payload);
           break;
+
+        case "CLEAR_CANVAS":
+          send("CLEAR_CANVAS", {});
+          break;
+
+        case "BULK_DEL_SHAPE":
+          send("BULK_DEL_SHAPE", action.payload);
+          break;
       }
     },
     [send],

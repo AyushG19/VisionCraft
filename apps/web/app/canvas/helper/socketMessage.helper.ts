@@ -54,6 +54,11 @@ export const incomingSocketHandlers: Record<
     }
   },
 
+  BULK_DEL_SHAPE: ({ event, canvasDispatch }) => {
+    if (event.type !== "BULK_DEL_SHAPE") return;
+    canvasDispatch({ type: "BULK_DEL_SHAPE", payload: event.payload });
+  },
+
   CHAT: ({ event, setMessages }) => {
     if (event.type !== "CHAT") return;
     const message = event.payload;
@@ -108,6 +113,13 @@ export const incomingSocketHandlers: Record<
   INFO: () => null,
   DESELECT: ({ event, activeElementMap }) => {
     if (event.type !== "DESELECT") return;
-    activeElementMap.delete(event.payload.userId);
+    for (const [key, val] of activeElementMap.entries()) {
+      if (val.userId === event.payload.userId) activeElementMap.delete(key);
+      break;
+    }
+  },
+  CLEAR_CANVAS: ({ event, canvasDispatch }) => {
+    if (event.type !== "CLEAR_CANVAS") return;
+    canvasDispatch({ type: "CLEAR_CANVAS" });
   },
 };

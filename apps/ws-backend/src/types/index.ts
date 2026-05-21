@@ -24,6 +24,7 @@ export type RedisData =
       type: "DEL";
       element: string;
     }
+  | { type: "BULK_DEL"; userId: string; elementIds: string[] }
   | {
       userId: string;
       type: "CHAT";

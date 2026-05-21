@@ -45,7 +45,7 @@ export async function UPD_SHAPE({
   touchRoom(roomId);
 
   const event: ElementRedisData = { type: "UPD", userId, element: payload };
-  element.update(roomId, event);
+  element.update(roomId, event); //publist occurs here
 
   sendInfo(ws, "Shape updated");
 }
@@ -69,6 +69,33 @@ export async function DEL_SHAPE({
 
   const event: ElementRedisData = { type: "DEL", userId, element: payload };
   element.delete(roomId, event);
+
+  sendInfo(ws, "Shape deleted");
+}
+
+export async function BULK_DEL_SHAPE({
+  ws,
+  roomId,
+  userId,
+  cleanData,
+  services,
+}: HandlerContext) {
+  if (cleanData.type !== "BULK_DEL_SHAPE") return;
+
+  const { payload } = cleanData;
+  const { element } = services;
+  if (!payload) {
+    sendError(ws, "MALFORMED_PAYLOAD");
+    return;
+  }
+  touchRoom(roomId);
+
+  const event: ElementRedisData = {
+    type: "BULK_DEL",
+    userId,
+    elementIds: payload,
+  };
+  element.deleteAll(roomId, event);
 
   sendInfo(ws, "Shape deleted");
 }

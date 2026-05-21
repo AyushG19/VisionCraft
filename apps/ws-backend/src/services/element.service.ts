@@ -4,7 +4,7 @@ import { RedisData } from "../types";
 
 export type ElementRedisData = Extract<
   RedisData,
-  { type: "ADD" | "DEL" | "UPD" }
+  { type: "ADD" | "DEL" | "UPD" | "BULK_DEL" }
 >;
 export class ElementService {
   constructor(
@@ -19,7 +19,7 @@ export class ElementService {
       this.queue.add(
         ELEMENT_JOBS.UPSERT,
         { roomId, element: event.element },
-        { jobId: `element-${event.element.id}` },
+        { jobId: `element-${Date.now()}` },
       ),
       this.pub.publish(`room:${roomId}:events`, JSON.stringify(event)),
     ]);
@@ -46,7 +46,22 @@ export class ElementService {
           roomId,
           elementId: event.element,
         },
-        { jobId: `element-${event.element}` },
+        { jobId: `element-${Date.now()}` },
+      ),
+      this.pub.publish(`room:${roomId}:events`, JSON.stringify(event)),
+    ]);
+  }
+
+  async deleteAll(roomId: string, event: ElementRedisData): Promise<void> {
+    if (event.type !== "BULK_DEL") return;
+    await Promise.all([
+      this.queue.add(
+        ELEMENT_JOBS.DELETE_ALL,
+        {
+          roomId,
+          elementIds: event.elementIds,
+        },
+        { jobId: `element-${Date.now()}` },
       ),
       this.pub.publish(`room:${roomId}:events`, JSON.stringify(event)),
     ]);
