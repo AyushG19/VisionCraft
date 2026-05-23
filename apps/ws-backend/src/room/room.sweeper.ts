@@ -1,3 +1,4 @@
+import { WebSocketServer } from "ws";
 import { evictRoom } from "./room.lifecycle";
 import {
   ROOM_IDLE_TTL_MS,
@@ -5,13 +6,14 @@ import {
   roomRegistry,
   SWEEP_INTERVAL_MS,
 } from "./room.state";
+import { CustomWs } from "../types";
 
 /**
  * Periodically scans every tracked room.  Any room that has had no activity
  * for longer than ROOM_IDLE_TTL_MS is forcibly evicted — disconnecting
  * lingering sockets and purging Redis data.
  */
-export function startIdleSweeper(): void {
+export function startIdleSweeper(): ReturnType<typeof setInterval> {
   const timer = setInterval(async () => {
     const now = Date.now();
     const evictions: Promise<void>[] = [];
@@ -40,9 +42,29 @@ export function startIdleSweeper(): void {
     }
   }, SWEEP_INTERVAL_MS);
 
-  // Don't keep the Node.js process alive solely for the sweeper
-  timer.unref();
   console.log(
-    `[Sweeper] Started — interval: ${SWEEP_INTERVAL_MS / 60_000} min, idle TTL: ${ROOM_IDLE_TTL_MS / 60_000} min`,
+    `[WS] Started — sweeper interval: ${SWEEP_INTERVAL_MS / 60_000} min, idle TTL: ${ROOM_IDLE_TTL_MS / 60_000} min`,
   );
+  return timer;
+}
+
+/*handling pong */
+export function startHeartbeat(
+  wss: WebSocketServer,
+): ReturnType<typeof setInterval> {
+  const id = setInterval(() => {
+    const clients = wss.clients as Set<CustomWs>;
+    clients.forEach((ws) => {
+      if (ws.isAlive === false) {
+        console.log("[WS] Terminating unresponsive zombie connection.");
+        ws.terminate();
+        return;
+      }
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, 50_000);
+
+  console.log(`[WS] Started — heartbeat interval ${50_000}`);
+  return id;
 }

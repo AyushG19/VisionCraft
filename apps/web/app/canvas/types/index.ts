@@ -60,10 +60,12 @@ export type DragStateType = {
   draggedShapeId: string | null;
   offsetX: number;
   offsetY: number;
+  originalShape: DrawElement;
 };
 export type ResizeStateType = {
   isResizing: boolean;
   resizeDirection: HandleName | null;
+  originalShape: DrawElement;
 };
 export type InteractionState = {
   isDrawing: boolean;
@@ -73,6 +75,7 @@ export type InteractionState = {
   resizeDirection: HandleName | null;
   startPos: { x: number; y: number };
   dragOffset: { x: number; y: number };
+  originalShape: DrawElement | null;
 };
 
 export type EventType = {

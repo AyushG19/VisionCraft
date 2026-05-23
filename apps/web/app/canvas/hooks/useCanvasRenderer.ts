@@ -34,7 +34,7 @@ const useCanvasRenderer = (
     prevSelectedIdRef.current = selectedElementRef.current?.id;
   }); // no deps — runs every render
 
-  useRafLoop({
+  const { scheduleRender } = useRafLoop({
     canvasRef,
     canvasStateRef,
     selectedElementRef,
@@ -43,6 +43,7 @@ const useCanvasRenderer = (
     activeElementMapRef,
     staticDirtyRef,
   });
+  return { scheduleRender };
 };
 
 export default useCanvasRenderer;

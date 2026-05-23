@@ -82,10 +82,7 @@ export const createDragedElement = (
 //   endY: clampedY + dy,
 // };
 
-type ResizableShape =
-  | ShapeType // rectangle, ellipse, triangle
-  | PencilType // pencil (has endX/endY in your model)
-  | ImageType;
+type ResizableShape = ShapeType | PencilType | ImageType;
 
 function isResizableShape(shape: DrawElement): shape is ResizableShape {
   return (
@@ -100,131 +97,130 @@ function isResizableShape(shape: DrawElement): shape is ResizableShape {
 export const createResizedElement = (
   resizeState: ResizeStateType,
   currPos: PointType,
-  shape: DrawElement,
+  liveShape: DrawElement, // ← rename parameter to avoid redeclaration conflict
 ): DrawElement => {
-  if (!isResizableShape(shape)) return shape;
+  if (
+    !isResizableShape(liveShape) ||
+    !isResizableShape(resizeState.originalShape)
+  )
+    return liveShape;
 
-  if (shape.type === "image") {
-    // Prevent division by zero errors if width/height are corrupted
-    if (shape.width === 0 || shape.height === 0) return shape;
+  const original = resizeState.originalShape; // snapshot for ALL branches
 
-    // 1. Calculate the original aspect ratio
-    const ratio = shape.width / shape.height;
+  if (liveShape.type === "image") {
+    if (original.type !== "image") return liveShape;
+    if (original.width === 0 || original.height === 0) return liveShape;
 
-    // 2. Find the "Anchor Point" (the corner directly opposite to the one you are dragging)
+    const ratio = original.width / original.height; // ← from snapshot
+
     let anchorX = 0;
     let anchorY = 0;
-
     switch (resizeState.resizeDirection) {
       case "TOP_LEFT":
-        anchorX = shape.startX + shape.width;
-        anchorY = shape.startY + shape.height;
+        anchorX = original.startX + original.width;
+        anchorY = original.startY + original.height;
         break;
       case "TOP_RIGHT":
-        anchorX = shape.startX;
-        anchorY = shape.startY + shape.height;
+        anchorX = original.startX;
+        anchorY = original.startY + original.height;
         break;
       case "BOTTOM_LEFT":
-        anchorX = shape.startX + shape.width;
-        anchorY = shape.startY;
+        anchorX = original.startX + original.width;
+        anchorY = original.startY;
         break;
       case "BOTTOM_RIGHT":
-        anchorX = shape.startX;
-        anchorY = shape.startY;
+        anchorX = original.startX;
+        anchorY = original.startY;
         break;
       default:
-        // If it's a side handle (TOP, BOTTOM, LEFT, RIGHT), you usually either
-        // ignore aspect ratio, or just return the shape.
-        return shape;
+        return liveShape;
     }
 
-    // 3. Calculate the raw distance from the anchor to the mouse
     const dx = currPos.x - anchorX;
     const dy = currPos.y - anchorY;
-
     const rawW = Math.abs(dx);
     const rawH = Math.abs(dy);
 
-    // 4. Pick the axis that the user is pulling the furthest to drive the scale
-    let finalW, finalH;
+    let finalW: number, finalH: number;
     if (rawW / ratio > rawH) {
       finalW = rawW;
-      finalH = rawW / ratio; // Force height to match ratio
+      finalH = rawW / ratio;
     } else {
       finalH = rawH;
-      finalW = rawH * ratio; // Force width to match ratio
+      finalW = rawH * ratio;
     }
 
-    // 5. Calculate new start positions.
-    // If dx/dy are negative, the mouse was dragged past the anchor (inverting the shape).
     const newStartX = dx < 0 ? anchorX - finalW : anchorX;
     const newStartY = dy < 0 ? anchorY - finalH : anchorY;
 
     return {
-      ...shape,
+      ...liveShape,
       startX: newStartX,
       startY: newStartY,
       width: finalW,
       height: finalH,
     };
   }
-  let newStartX = shape.startX;
-  let newStartY = shape.startY;
-  let newEndX = shape.endX;
-  let newEndY = shape.endY;
+  if (!("endX" in original) || !("endY" in original)) return liveShape;
+
+  // All other resizable shapes — read anchors from snapshot
+  let newStartX = original.startX;
+  let newStartY = original.startY;
+  let newEndX = original.endX;
+  let newEndY = original.endY;
 
   switch (resizeState.resizeDirection) {
     case "TOP":
-      newStartY = Math.min(currPos.y, shape.endY);
-      newEndY = Math.max(currPos.y, shape.endY);
+      newStartY = Math.min(currPos.y, original.endY);
+      newEndY = Math.max(currPos.y, original.endY);
       break;
 
     case "BOTTOM":
-      newStartY = Math.min(shape.startY, currPos.y);
-      newEndY = Math.max(shape.startY, currPos.y);
+      newStartY = Math.min(original.startY, currPos.y);
+      newEndY = Math.max(original.startY, currPos.y);
       break;
 
     case "LEFT":
-      newStartX = Math.min(currPos.x, shape.endX);
-      newEndX = Math.max(currPos.x, shape.endX);
+      newStartX = Math.min(currPos.x, original.endX);
+      newEndX = Math.max(currPos.x, original.endX);
       break;
 
     case "RIGHT":
-      newStartX = Math.min(shape.startX, currPos.x);
-      newEndX = Math.max(shape.startX, currPos.x);
+      newStartX = Math.min(original.startX, currPos.x);
+      newEndX = Math.max(original.startX, currPos.x);
       break;
 
     case "TOP_LEFT":
-      newStartX = Math.min(currPos.x, shape.endX);
-      newEndX = Math.max(currPos.x, shape.endX);
-      newStartY = Math.min(currPos.y, shape.endY);
-      newEndY = Math.max(currPos.y, shape.endY);
+      newStartX = Math.min(currPos.x, original.endX);
+      newEndX = Math.max(currPos.x, original.endX);
+      newStartY = Math.min(currPos.y, original.endY);
+      newEndY = Math.max(currPos.y, original.endY);
       break;
 
     case "TOP_RIGHT":
-      newStartX = Math.min(shape.startX, currPos.x);
-      newEndX = Math.max(shape.startX, currPos.x);
-      newStartY = Math.min(currPos.y, shape.endY);
-      newEndY = Math.max(currPos.y, shape.endY);
+      newStartX = Math.min(original.startX, currPos.x);
+      newEndX = Math.max(original.startX, currPos.x);
+      newStartY = Math.min(currPos.y, original.endY);
+      newEndY = Math.max(currPos.y, original.endY);
       break;
 
     case "BOTTOM_LEFT":
-      newStartX = Math.min(currPos.x, shape.endX);
-      newEndX = Math.max(currPos.x, shape.endX);
-      newStartY = Math.min(shape.startY, currPos.y);
-      newEndY = Math.max(shape.startY, currPos.y);
+      newStartX = Math.min(currPos.x, original.endX);
+      newEndX = Math.max(currPos.x, original.endX);
+      newStartY = Math.min(original.startY, currPos.y);
+      newEndY = Math.max(original.startY, currPos.y);
       break;
 
     case "BOTTOM_RIGHT":
-      newStartX = Math.min(shape.startX, currPos.x);
-      newEndX = Math.max(shape.startX, currPos.x);
-      newStartY = Math.min(shape.startY, currPos.y);
-      newEndY = Math.max(shape.startY, currPos.y);
+      newStartX = Math.min(original.startX, currPos.x);
+      newEndX = Math.max(original.startX, currPos.x);
+      newStartY = Math.min(original.startY, currPos.y);
+      newEndY = Math.max(original.startY, currPos.y);
       break;
   }
 
   return {
-    ...shape,
+    ...original,
     startX: newStartX,
     startY: newStartY,
     endX: newEndX,

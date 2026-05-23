@@ -25,38 +25,43 @@ export type eventHandlerContext = {
   memberCursorMap: Map<string, PointType>;
   event: ServerSocketDataType;
   activeElementMap: ActiveElementMapType;
+  scheduleRender: () => void;
 };
 export const incomingSocketHandlers: Record<
   ServerSocketDataType["type"],
   (ctx: eventHandlerContext) => void
 > = {
-  ADD_SHAPE: ({ event, canvasDispatch }) => {
+  ADD_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
     if (event.type !== "ADD_SHAPE") return;
     const shape = event.payload;
     if (shape) {
       canvasDispatch({ type: "ADD_SHAPE", payload: shape });
+      scheduleRender();
     }
   },
 
-  UPD_SHAPE: ({ event, canvasDispatch }) => {
+  UPD_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
     if (event.type !== "UPD_SHAPE") return;
     const shape = event.payload;
     if (shape) {
       canvasDispatch({ type: "UPD_SHAPE", payload: shape });
+      scheduleRender();
     }
   },
 
-  DEL_SHAPE: ({ event, canvasDispatch }) => {
+  DEL_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
     if (event.type !== "DEL_SHAPE") return;
     const shape = event.payload;
     if (shape) {
       canvasDispatch({ type: "DEL_SHAPE", payload: shape });
+      scheduleRender();
     }
   },
 
-  BULK_DEL_SHAPE: ({ event, canvasDispatch }) => {
+  BULK_DEL_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
     if (event.type !== "BULK_DEL_SHAPE") return;
     canvasDispatch({ type: "BULK_DEL_SHAPE", payload: event.payload });
+    scheduleRender();
   },
 
   CHAT: ({ event, setMessages }) => {
@@ -65,10 +70,11 @@ export const incomingSocketHandlers: Record<
     setMessages((prev) => [...prev, message]);
   },
 
-  CURSOR: ({ event, memberCursorMap }) => {
+  CURSOR: ({ event, memberCursorMap, scheduleRender }) => {
     if (event.type !== "CURSOR") return;
     const { userId, coordinates } = event.payload;
     memberCursorMap.set(userId, coordinates);
+    scheduleRender();
   },
 
   USER_LEFT: ({ event, memberCursorMap, setRoomInfo }) => {
@@ -91,7 +97,7 @@ export const incomingSocketHandlers: Record<
     }));
   },
 
-  RESIZE: async ({ event, activeElementMap }) => {
+  RESIZE: async ({ event, activeElementMap, scheduleRender }) => {
     if (event.type !== "RESIZE") return;
     const { userId, element } = event.payload;
     activeElementMap.set(element.id, {
@@ -99,9 +105,10 @@ export const incomingSocketHandlers: Record<
       isDirty: true,
       userId,
     });
+    scheduleRender();
   },
 
-  DRAG: async ({ event, activeElementMap }) => {
+  DRAG: async ({ event, activeElementMap, scheduleRender }) => {
     if (event.type !== "DRAG") return;
     const { userId, element } = event.payload;
     activeElementMap.set(element.id, {
@@ -109,17 +116,20 @@ export const incomingSocketHandlers: Record<
       isDirty: true,
       userId,
     });
+    scheduleRender();
   },
   INFO: () => null,
-  DESELECT: ({ event, activeElementMap }) => {
+  DESELECT: ({ event, activeElementMap, scheduleRender }) => {
     if (event.type !== "DESELECT") return;
     for (const [key, val] of activeElementMap.entries()) {
       if (val.userId === event.payload.userId) activeElementMap.delete(key);
       break;
     }
+    scheduleRender();
   },
-  CLEAR_CANVAS: ({ event, canvasDispatch }) => {
+  CLEAR_CANVAS: ({ event, canvasDispatch, scheduleRender }) => {
     if (event.type !== "CLEAR_CANVAS") return;
     canvasDispatch({ type: "CLEAR_CANVAS" });
+    scheduleRender();
   },
 };

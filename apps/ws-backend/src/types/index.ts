@@ -64,3 +64,7 @@ export type HandlerContext = {
   cleanData: ReturnType<typeof validateSocketData>;
   services: Services;
 };
+
+export interface CustomWs extends WebSocket {
+  isAlive?: boolean;
+}

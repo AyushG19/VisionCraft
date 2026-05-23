@@ -12,6 +12,7 @@ const useInteractionState = () => {
     resizeDirection: null,
     startPos: { x: 0, y: 0 },
     dragOffset: { x: 0, y: 0 },
+    originalShape: null,
   });
 
   const tempShapeRef = useRef<DrawElement | undefined>(undefined);
@@ -23,30 +24,35 @@ const useInteractionState = () => {
   //here we write
   const startDrag = useCallback(
     (
-      shapeId: string,
+      shape: DrawElement,
       clickPos: { x: number; y: number },
       shapeOrigin: { x: number; y: number },
     ) => {
       interactionRef.current = {
         ...interactionRef.current,
         isDragging: true,
-        draggedShapeId: shapeId,
+        draggedShapeId: shape.id,
         dragOffset: {
           x: clickPos.x - shapeOrigin.x,
           y: clickPos.y - shapeOrigin.y,
         },
+        originalShape: { ...shape },
       };
     },
     [],
   );
 
-  const startResize = useCallback((direction: HandleName) => {
-    interactionRef.current = {
-      ...interactionRef.current,
-      isResizing: true,
-      resizeDirection: direction,
-    };
-  }, []);
+  const startResize = useCallback(
+    (direction: HandleName, shape: DrawElement) => {
+      interactionRef.current = {
+        ...interactionRef.current,
+        isResizing: true,
+        resizeDirection: direction,
+        originalShape: { ...shape },
+      };
+    },
+    [],
+  );
 
   const startDrawing = useCallback((pos: PointType) => {
     interactionRef.current = {
@@ -61,6 +67,7 @@ const useInteractionState = () => {
     interactionRef.current.isResizing = false;
     interactionRef.current.draggedShapeId = null;
     interactionRef.current.resizeDirection = null;
+    interactionRef.current.originalShape = null;
   }, []);
 
   const stopDrawing = useCallback(() => {
@@ -74,6 +81,7 @@ const useInteractionState = () => {
       isDragging: interactionRef.current.isDragging,
       offsetX: interactionRef.current.dragOffset.x,
       offsetY: interactionRef.current.dragOffset.y,
+      originalShape: interactionRef.current.originalShape!,
     }),
     [],
   );
@@ -82,6 +90,7 @@ const useInteractionState = () => {
     (): ResizeStateType => ({
       isResizing: interactionRef.current.isResizing,
       resizeDirection: interactionRef.current.resizeDirection,
+      originalShape: interactionRef.current.originalShape!,
     }),
     [],
   );

@@ -16,24 +16,19 @@ import {
   TextEditState,
 } from "../types";
 import resizeCanvas from "../utils/canvasResizeHelper";
-import redrawPreviousShapes, {
-  imageCache,
-} from "../utils/redrawPreviousShapes";
-
+import { imageCache } from "../utils/redrawPreviousShapes";
 import useInteractionState from "./useInteractionState";
-import useSelectInteraction from "./useSelectInteraction";
-import useDrawInteraction from "./useDrawingInteraction";
 import { getMousePos, getMousePosOnWorld } from "../helper/coordinate.helper";
 import { Camera, useCamera } from "./useCamera";
-import { screenToWorld, worldToScreen } from "../../lib/math";
+import { screenToWorld } from "../../lib/math";
 import { storeImg } from "../../services/canvas.service";
 import { set } from "idb-keyval";
 import { createNewImage, createNewText } from "../utils/createNewShape";
 import { measureText } from "../helper/canvas.helper";
 import { isClickOnShape } from "../utils/isPointInShape";
-import { MemberCursor } from "@repo/hooks";
-import useCanvasRenderer from "./useCanvasRenderer";
 import { updateCursor } from "../helper/cursorUpdate.helper";
+import { createSelectInteraction } from "../helper/selectInteraction.helper";
+import createDrawInteraction from "../helper/drawingInteraction.helper";
 
 const useCanvasInteraction = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -46,8 +41,9 @@ const useCanvasInteraction = (
   inRoom: boolean,
   sideToolkit: HTMLDivElement | null,
   sendActiveElementUpdate: (event: ClientShapeManipulation) => void,
-  memberCursorMapRef: React.RefObject<MemberCursor>,
+  scheduleRender: () => void,
   activeElementMapRef: React.RefObject<ActiveElementMapType>,
+  staticDirtyRef: React.MutableRefObject<boolean>,
 ): {
   selectedElementRef: React.RefObject<DrawElement | undefined>;
   cameraRef: React.RefObject<Camera>;
@@ -56,35 +52,22 @@ const useCanvasInteraction = (
   textEdit: TextEditState;
   setTextEdit: Dispatch<SetStateAction<TextEditState>>;
 } => {
-  // const [selectedElement, setSelectedElement] = useState<
-  //   DrawElement | undefined
-  // >(undefined);
   const [textEdit, setTextEdit] = useState<TextEditState>(null);
   const interactionState = useInteractionState();
   const selectedElementRef = interactionState.tempShapeRef;
-  // const cursor = useCanvasCursor(canvasRef);
-  const staticDirtyRef = useRef(true);
+
   const markStaticDirty = useCallback(() => {
     staticDirtyRef.current = true;
-  }, []);
+    scheduleRender();
+  }, [scheduleRender, staticDirtyRef]);
 
-  // 2. useCamera gets markStaticDirty, returns cameraRef
   const { cameraRef, onPanStart, onPanMove, onPanEnd, isPanning, onWheel } =
     useCamera(canvasRef, canvasState.toolState.currentTool, markStaticDirty);
 
+  const canvasStateRef = useRef(canvasState);
   useEffect(() => {
     canvasStateRef.current = canvasState;
-  }); // no deps = runs every render
-
-  useCanvasRenderer(
-    canvasRef,
-    canvasState,
-    selectedElementRef,
-    cameraRef,
-    memberCursorMapRef,
-    activeElementMapRef,
-    staticDirtyRef,
-  );
+  }); // runs every render to prevent stale closures
 
   const finishText = useCallback(() => {
     if (!textEdit || !canvasRef.current) return;
@@ -111,36 +94,20 @@ const useCanvasInteraction = (
     dispatchWithSocket({ type: "ADD_SHAPE", payload: element });
     dispatchWithSocket({ type: "CHANGE_TOOL", payload: "select" });
     setTextEdit(null);
-
-    console.log("cameraRefera;", cameraRef);
-  }, [textEdit, canvasState.textState]);
+  }, [textEdit, canvasState.textState, cameraRef, dispatchWithSocket]);
 
   const cancelText = useCallback(() => {
     setTextEdit(null);
   }, []);
 
-  const selectInteraction = useSelectInteraction(
-    interactionState,
-    dispatchWithSocket,
-    sendActiveElementUpdate,
-  );
-
-  const drawInteraction = useDrawInteraction(
-    interactionState,
-    dispatchWithSocket,
-    sendActiveElementUpdate,
-  );
-
-  const canvasStateRef = useRef(canvasState);
+  const selectInteraction = createSelectInteraction(interactionState);
+  const drawInteraction = createDrawInteraction(interactionState);
 
   useEffect(() => {
     const tool = canvasState.toolState.currentTool;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // if (tool === "image") {
-    //   inputRef.current?.click();
-    //   inputRef.current?.blur();
-    // }
+
     updateCursor(
       canvas,
       tool,
@@ -152,49 +119,42 @@ const useCanvasInteraction = (
       interactionState.interaction.current.isDragging,
       interactionState.interaction.current.isResizing,
     );
-  }, [canvasState.toolState.currentTool]);
+  }, [
+    canvasState.toolState.currentTool,
+    cameraRef,
+    selectedElementRef,
+    canvasState.drawnShapes,
+    isPanning,
+    interactionState.interaction,
+  ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const fileInput = inputRef.current;
-    if (!canvas || !fileInput) {
-      console.log("somethng missing:");
-      return;
-    }
+    if (!canvas || !fileInput) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    resizeCanvas(
-      canvas,
-      ctx,
-      () =>
-        redrawPreviousShapes(
-          ctx,
-          canvasStateRef.current.drawnShapes,
-          cameraRef.current,
-          activeElementMapRef.current,
-        ),
-      canvasStateRef.current.toolState,
-    );
 
     const handleResize = () => {
       resizeCanvas(
         canvas,
         ctx,
-        () =>
-          redrawPreviousShapes(
-            ctx,
-            canvasStateRef.current.drawnShapes,
-            cameraRef.current,
-            activeElementMapRef.current,
-          ),
+        () => {
+          staticDirtyRef.current = true;
+          scheduleRender();
+        },
         canvasStateRef.current.toolState,
       );
     };
 
+    // Initial resize
+    handleResize();
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (textAreaRef.current) return;
+      const currentTool = canvasStateRef.current.toolState.currentTool;
+
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedElementRef.current
@@ -204,58 +164,38 @@ const useCanvasInteraction = (
           type: "DEL_SHAPE",
           payload: selectedElementRef.current.id,
         });
-        // setSelectedElement(undefined);
+        // Unlock the shape for other users when deleted
+        sendActiveElementUpdate({ type: "DESELECT", payload: {} });
         selectedElementRef.current = undefined;
+        markStaticDirty();
       }
 
-      if (canvasState.toolState.currentTool === "text") return null;
-      if (e.key === "q") {
+      if (currentTool === "text") return null;
+
+      if (e.key === "q")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "select" });
-      }
-
-      if (e.key === "w") {
+      if (e.key === "w")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "hand" });
-      }
-
-      if (e.key === "e") {
+      if (e.key === "e")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "ellipse" });
-      }
-
-      if (e.key === "r") {
+      if (e.key === "r")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "rectangle" });
-      }
-
-      if (e.key === "a") {
+      if (e.key === "a")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "diamond" });
-      }
-
-      if (e.key === "s") {
+      if (e.key === "s")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "line" });
-      }
-
-      if (e.key === "d") {
+      if (e.key === "d")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "arrow" });
-      }
-
-      if (e.key === "f") {
+      if (e.key === "f")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "pencil" });
-      }
-
-      if (e.key === "z") {
+      if (e.key === "z")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "eraser" });
-      }
-
-      if (e.key === "x") {
+      if (e.key === "x")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "text" });
-      }
-
-      if (e.key === "c") {
-        inputRef.current?.click();
-      }
-
-      if (e.key === "v") {
+      if (e.key === "c") inputRef.current?.click();
+      if (e.key === "v")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "color" });
-      }
+
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         canvasDispatch({ type: "UNDO" });
@@ -267,48 +207,7 @@ const useCanvasInteraction = (
       }
     };
 
-    // const handleDoubleClick = (e: MouseEvent) => {
-    //   const pos = getMousePos(canvasRef, { x: e.clientX, y: e.clientY });
-    //   const currentSelected = selectedElementRef.current;
-    //   const currentState = canvasStateRef.current;
-    //   const tool = currentState.toolState.currentTool;
-    //   if (tool === "select") {
-    //     const newSelected = selectInteraction.handleSelectMouseDown(
-    //       pos,
-    //       currentState,
-    //       selectedElementRef,
-    //       // activeElementMap,
-    //       sendActiveElementUpdate,
-    //     );
-    //     if (newSelected?.type === "text") {
-    //       setTextEdit({
-    //         elementId: newSelected.id,
-    //         text: newSelected.text,
-    //         x: newSelected.startX,
-    //         y: newSelected.startY,
-    //       });
-    //     }
-    //     if (newSelected) {
-    //       setSelectedElement(newSelected);
-    //       canvasDispatch({
-    //         type: "UPD_SHAPE",
-    //         payload: newSelected,
-    //       });
-    //     } else {
-    //       setSelectedElement(undefined);
-    //     }
-    //     // } else {
-    //     //   if (selectedShape)
-    //     //     canvasDispatch({
-    //     //       type: "UPD_SHAPE",
-    //     //       payload: { ...selectedShape, isSelected: false },
-    //     //     });
-    //     //   setSelectedElement(undefined);
-    //     // }
-    //   }
-    // };
     const onMouseDown = (e: MouseEvent) => {
-      // const worldPos = screenToWorld(...getMousePos(canvasRef, { x: e.clientX, y: e.clientY }),cameraRef);
       const pos = getMousePosOnWorld(
         canvas,
         { x: e.clientX, y: e.clientY },
@@ -316,7 +215,6 @@ const useCanvasInteraction = (
       );
       const currentState = canvasStateRef.current;
       const tool = currentState.toolState.currentTool;
-      console.log("Mouse down", "current tool :", tool);
 
       if (tool === "select") {
         const newshape = selectInteraction.handleSelectMouseDown(
@@ -325,24 +223,22 @@ const useCanvasInteraction = (
           selectedElementRef,
           activeElementMapRef,
         );
+        if (selectedElementRef.current && newshape)
+          sendActiveElementUpdate({ type: "DESELECT", payload: {} });
 
-        console.log("Res from mouse down: ", newshape);
-        //setting shape to undefined
         if (!newshape) {
-          console.log("In !newshape mouse down");
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
           selectedElementRef.current = undefined;
-          markStaticDirty();
         } else {
-          sendActiveElementUpdate({ type: "DRAG", payload: newshape }); //handles not inroom itself
+          sendActiveElementUpdate({ type: "DRAG", payload: newshape });
           selectedElementRef.current = newshape;
-          markStaticDirty();
         }
+        markStaticDirty();
+        scheduleRender();
       } else if (tool === "text") {
         e.preventDefault();
         textAreaRef.current?.blur();
-
-        const screenPos = { x: e.clientX, y: e.clientY }; // raw screen coords
+        const screenPos = { x: e.clientX, y: e.clientY };
         const canvasPos = getMousePos(canvasRef, screenPos);
 
         setTextEdit(() => ({
@@ -356,15 +252,14 @@ const useCanvasInteraction = (
       } else if (tool === "eraser") {
         interactionState.eraseStateRef.current.isErasing = true;
       } else {
-        drawInteraction.handleDrawMouseDown(
+        const preview = drawInteraction.handleDrawMouseDown(
           pos,
           currentState.toolState,
           currentState.sideToolKitState,
-          selectedElementRef,
         );
-        markStaticDirty();
+        if (preview) selectedElementRef.current = preview;
+        scheduleRender();
       }
-      // markStaticDirty();
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -378,62 +273,68 @@ const useCanvasInteraction = (
 
       sendCursorState(pos);
 
-      if (tool === "select") {
-        const isDone = selectInteraction.handleSelectMouseMove(
-          pos,
-          // ctx,
-          selectedElementRef,
-          // currentState,
-          // cameraRef,
-          // sendActiveElementUpdate,
-        );
-        // if (isDone) markStaticDirty();
-      } else if (tool === "hand") {
-        onPanMove(e);
-      } else if (tool === "eraser") {
-        if (!interactionState.eraseStateRef.current.isErasing) return;
-        // const worldPos = screenToWorld(pos.x, pos.y, cameraRef.current);
-        // console.log(worldPos);
-        const clickedShape = [...currentState.drawnShapes].find(
-          (shape: DrawElement) => isClickOnShape(pos, shape),
-        );
+      switch (tool) {
+        case "select": {
+          const preview = selectInteraction.handleSelectMouseMove(
+            pos,
+            selectedElementRef.current,
+          );
+          if (preview) {
+            selectedElementRef.current = preview;
+            sendActiveElementUpdate({ type: "DRAG", payload: preview });
+            scheduleRender();
+          }
+          break;
+        }
+        case "hand": {
+          onPanMove(e);
+          break;
+        }
+        case "eraser": {
+          if (!interactionState.eraseStateRef.current.isErasing) return;
+          const clickedShape = [...currentState.drawnShapes].find(
+            (shape: DrawElement) => isClickOnShape(pos, shape),
+          );
+          if (!clickedShape) return;
 
-        console.log(clickedShape);
-        if (!clickedShape) return;
+          const isLockedByOther = [
+            ...activeElementMapRef.current.values(),
+          ].some((entry) => entry.element.id === clickedShape.id);
+          if (
+            isLockedByOther ||
+            clickedShape.id === selectedElementRef.current?.id
+          )
+            return;
 
-        // Inside handleSelectMouseDown, before allowing selection of a shape:
-        const isLockedByOther = [...activeElementMapRef.current.values()].some(
-          (entry) => entry.element.id === clickedShape.id,
-        );
-
-        if (
-          isLockedByOther ||
-          clickedShape.id === selectedElementRef.current?.id
-        )
-          return;
-
-        canvasDispatch({
-          type: "UPD_SHAPE",
-          payload: { ...clickedShape, opacity: 0.2 },
-        });
-        interactionState.eraseStateRef.current.elementsToDelete.push(
-          clickedShape.id,
-        );
-
-        return;
-      } else {
-        drawInteraction.handleDrawMouseMove(
-          pos,
-          // ctx,
-          currentState.toolState,
-          currentState.sideToolKitState,
-          selectedElementRef,
-          // sendActiveElementUpdate,
-          // currentState.drawnShapes,
-          // currentSelected,
-          // setSelectedElement,
-          // cameraRef,
-        );
+          canvasDispatch({
+            type: "UPD_SHAPE",
+            payload: { ...clickedShape, opacity: 0.2 },
+          });
+          interactionState.eraseStateRef.current.elementsToDelete.push(
+            clickedShape.id,
+          );
+          break;
+        }
+        default: {
+          if (!selectedElementRef.current) break;
+          const preview = drawInteraction.handleDrawMouseMove(
+            pos,
+            currentState.toolState,
+            currentState.sideToolKitState,
+            selectedElementRef.current,
+          );
+          if (preview) {
+            selectedElementRef.current = {
+              ...preview,
+              id: selectedElementRef.current.id,
+            };
+            sendActiveElementUpdate({
+              type: "DRAG",
+              payload: selectedElementRef.current,
+            });
+            scheduleRender();
+          }
+        }
       }
 
       updateCursor(
@@ -450,48 +351,62 @@ const useCanvasInteraction = (
     };
 
     const onMouseUp = (e: MouseEvent) => {
-      console.log("up ", e.target, sideToolkit);
-      if (e.target === sideToolkit) {
-        return;
-      }
+      if (e.target === sideToolkit) return;
       const pos = getMousePosOnWorld(
         canvas,
         { x: e.clientX, y: e.clientY },
         cameraRef.current,
       );
       const currentState = canvasStateRef.current;
-      // const currentSelected = selectedElementRef.current;
       const tool = currentState.toolState.currentTool;
 
-      if (tool === "select") {
-        selectInteraction.handleSelectMouseUp(
-          pos,
-          selectedElementRef,
-          // selectedElementRef,
-        );
-      } else if (tool === "hand") {
-        onPanEnd();
-      } else if (tool === "eraser") {
-        dispatchWithSocket({
-          type: "BULK_DEL_SHAPE",
-          payload: interactionState.eraseStateRef.current.elementsToDelete,
-        });
-
-        interactionState.eraseStateRef.current = {
-          isErasing: false,
-          elementsToDelete: [],
-        };
-      } else {
-        drawInteraction.handleDrawMouseUp(
-          pos,
-          currentState.toolState,
-          currentState.sideToolKitState,
-          selectedElementRef,
-          // currentSelected,
-          // setSelectedElement,
-        );
-        sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-        selectedElementRef.current = undefined;
+      switch (tool) {
+        case "select": {
+          const preview = selectInteraction.handleSelectMouseUp(
+            pos,
+            selectedElementRef.current,
+          );
+          if (preview) {
+            selectedElementRef.current = preview;
+            dispatchWithSocket({ type: "UPD_SHAPE", payload: preview });
+            scheduleRender();
+          }
+          break;
+        }
+        case "hand": {
+          onPanEnd();
+          break;
+        }
+        case "eraser": {
+          dispatchWithSocket({
+            type: "BULK_DEL_SHAPE",
+            payload: interactionState.eraseStateRef.current.elementsToDelete,
+          });
+          interactionState.eraseStateRef.current = {
+            isErasing: false,
+            elementsToDelete: [],
+          };
+          scheduleRender();
+          break;
+        }
+        default: {
+          if (!selectedElementRef.current) break;
+          const preview = drawInteraction.handleDrawMouseUp(
+            pos,
+            currentState.toolState,
+            currentState.sideToolKitState,
+            selectedElementRef.current,
+          );
+          sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+          if (preview) {
+            dispatchWithSocket({
+              type: "ADD_SHAPE",
+              payload: { ...preview, id: selectedElementRef.current.id },
+            });
+            markStaticDirty();
+          }
+          selectedElementRef.current = undefined;
+        }
       }
 
       if (canvasStateRef.current.toolState.currentTool !== "select") {
@@ -499,30 +414,26 @@ const useCanvasInteraction = (
       }
     };
 
-    const handleWheel = (e: WheelEvent) => {
-      onWheel(e);
-    };
+    const handleWheel = (e: WheelEvent) => onWheel(e);
 
-    const handleFileInput = async () => {
-      const fileList = fileInput.files;
-      console.log("in file");
+    const handleFileInput = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const fileList = target.files;
       if (!fileList || fileList.length === 0) return;
-      console.log("file item", fileList[fileList.length - 1]);
+
       const lastImg = fileList[fileList.length - 1]!;
 
-      console.log("Mime type:", lastImg.type);
-      //clean data and optimize
+      // Reset input so the same file can be uploaded again if deleted
+      target.value = "";
+
       const worker = new Worker(
         new URL("../../worker/worker.ts", import.meta.url),
       );
       const imgBitmap = await createImageBitmap(lastImg);
 
-      // console.log("newimg", newImage);
-
       worker.postMessage({ imgBitmap });
       worker.onmessage = async (message) => {
         const compressedBlob = message.data;
-
         const compressedBitmap = await createImageBitmap(compressedBlob);
         const newImage = createNewImage(
           compressedBitmap.width / cameraRef.current.z,
@@ -531,6 +442,7 @@ const useCanvasInteraction = (
           canvasState.toolState.currentColor,
           canvasState.toolState.strokeSize,
         );
+
         await set(newImage.id, compressedBlob);
         imageCache.set(newImage.id, compressedBitmap);
         dispatchWithSocket({ type: "ADD_SHAPE", payload: newImage });
@@ -542,15 +454,9 @@ const useCanvasInteraction = (
           });
         }
       };
-      // const tempUrl = URL.createObjectURL(lastImg);
-      // const img = new Image();
-      // img.onload = () => ctx.drawImage(img, 0, 0);
-      // img.src =
-      //   "http://res.cloudinary.com/dg6spymhq/image/upload/v1775821766/djv9uk6ksl2s344mnpqu.webp";
     };
 
     canvas.addEventListener("pointerdown", onMouseDown);
-    // canvas.addEventListener("dblclick", handleDoubleClick);
     canvas.addEventListener("wheel", handleWheel);
     canvas.addEventListener("pointermove", onMouseMove);
     window.addEventListener("pointerup", onMouseUp);
@@ -558,18 +464,8 @@ const useCanvasInteraction = (
     window.addEventListener("keydown", onKeyDown);
     fileInput.addEventListener("change", handleFileInput);
 
-    // redrawPreviousShapes(
-    //   ctx,
-    //   canvasStateRef.current.drawnShapes,
-    //   cameraRef,
-    //   activeElementMap,
-    //   selectedShape,
-    //   selectedShape?.id,
-    // );
-
     return () => {
       canvas.removeEventListener("pointerdown", onMouseDown);
-      // canvas.removeEventListener("dblclick", handleDoubleClick);
       canvas.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("pointermove", onMouseMove);
       window.removeEventListener("pointerup", onMouseUp);
@@ -577,38 +473,24 @@ const useCanvasInteraction = (
       window.removeEventListener("keydown", onKeyDown);
       fileInput.removeEventListener("change", handleFileInput);
     };
-  }, [inRoom, cameraRef]);
-
-  // useEffect(() => {
-  //   selectedElementRef.current = selectedElement;
-  // }, [selectedElement]);
-
-  // useEffect(() => {
-  //   canvasStateRef.current = canvasState;
-
-  //   const ctx = canvasRef.current?.getContext("2d");
-  //   if (!ctx) return;
-  //   redrawPreviousShapes(
-  //     ctx,
-  //     canvasState.drawnShapes,
-  //     camera,
-  //     activeElementMap,
-  //     selectedShape,
-  //     selectedShape?.id,
-  //   );
-  //   console.log("redraw occured");
-  // }, [canvasState]);
-
-  // useEffect(() => {
-  //   const canvas = canvasRef.current;
-  //   if(!canvas) return;
-  //   const ctx = canvas.getContext("2d");
-  //   resizeCanvas(canvas,ctx,redrawPreviousShapes,);
-  // }, [isOpen]);
+  }, [
+    inRoom,
+    cameraRef,
+    dispatchWithSocket,
+    sendActiveElementUpdate,
+    markStaticDirty,
+    onPanEnd,
+    onPanMove,
+    onPanStart,
+    onWheel,
+    scheduleRender,
+    selectInteraction,
+    drawInteraction,
+    interactionState,
+  ]);
 
   return {
     selectedElementRef,
-    // setSelectedElement,
     cameraRef,
     cancelText,
     finishText,

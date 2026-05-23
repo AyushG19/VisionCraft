@@ -11,11 +11,13 @@ import { ChatService } from "./services/chat.service";
 import { appQueue, initQueue } from "@repo/queue";
 import { ElementService } from "./services/element.service";
 import { removeUserFromRoomRegistry } from "./room/room.lifecycle";
-import { startIdleSweeper } from "./room/room.sweeper";
+import { startIdleSweeper, startHeartbeat } from "./room/room.sweeper";
 import { sendError, sendInfo } from "./helpers/ws.helper";
 import { handlers } from "./handlers";
 import http from "http";
 import { corsMap } from "./config";
+import { CustomWs, RedisData } from "./types";
+import { removeUserFromRoom } from "@repo/db";
 
 const server = http.createServer((req, res) => {
   res.setHeaders(corsMap);
@@ -42,12 +44,20 @@ initQueue(
   `redis://${env.RS_USERNAME}:${env.RS_PASSWORD}@${env.RS_HOST}:${env.RS_PORT}`,
 );
 
-startIdleSweeper();
+const sweeperId = startIdleSweeper();
+const intervalId = startHeartbeat(wss);
 
 const chatService = new ChatService(redisPub, appQueue);
 const elementService = new ElementService(redisPub, appQueue);
 
-wss.on("connection", (ws, req) => {
+wss.on("close", () => {
+  clearInterval(intervalId);
+  clearInterval(sweeperId);
+});
+
+wss.on("connection", (rawWs, req) => {
+  const ws = rawWs as CustomWs;
+
   if (!req.url || !req.headers.host) {
     ws.close(1008, "Missing URL or host header");
     return;
@@ -64,6 +74,9 @@ wss.on("connection", (ws, req) => {
     roomId = rid;
     jwtPayload = validateToken(token);
     userId = jwtPayload.userId;
+    ws.isAlive = true;
+    sendInfo(ws, "Connected to server");
+    console.log(`[WS] User ${userId} connected (room: ${roomId})`);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unauthorized";
     sendError(ws, message);
@@ -71,8 +84,9 @@ wss.on("connection", (ws, req) => {
     return;
   }
 
-  sendInfo(ws, "Connected to server");
-  console.log(`[WS] User ${userId} connected (room: ${roomId})`);
+  ws.on("pong", async () => {
+    ws.isAlive = true;
+  });
 
   ws.on("message", async (raw) => {
     try {
@@ -96,7 +110,12 @@ wss.on("connection", (ws, req) => {
     console.log(
       `[WS] User ${userId} disconnected (room: ${roomId}) — code: ${code}`,
     );
-    await removeUserFromRoomRegistry(roomId, userId);
+    const pubData: RedisData = { type: "LEAVE", userId, time: Date.now() };
+    await Promise.all([
+      redisPub.publish(`room:${roomId}:events`, JSON.stringify(pubData)),
+      await removeUserFromRoom(userId, roomId),
+      await removeUserFromRoomRegistry(roomId, userId),
+    ]);
   });
 
   ws.on("error", (err) => {

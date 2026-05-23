@@ -79,7 +79,7 @@ const useSelectInteraction = (
 
         // Clicked inside selected shape body? → Start drag
         if (isInsideSelectBound(worldPos, outlineBounds!)) {
-          startDrag(selectedElementRef.current.id, worldPos, {
+          startDrag(selectedElementRef.current, worldPos, {
             x: selectedElementRef.current.startX,
             y: selectedElementRef.current.startY,
           });
@@ -95,7 +95,7 @@ const useSelectInteraction = (
           selectedElementRef.current,
         );
         if (hitHandle) {
-          startResize(hitHandle);
+          startResize(hitHandle, selectedElementRef.current);
           return selectedElementRef.current;
         }
         return undefined;
@@ -123,7 +123,7 @@ const useSelectInteraction = (
         return undefined;
       } else {
         // Immediately set up drag so click+drag works in one motion
-        startDrag(clickedShape.id, worldPos, {
+        startDrag(clickedShape, worldPos, {
           x: clickedShape.startX,
           y: clickedShape.startY,
         });

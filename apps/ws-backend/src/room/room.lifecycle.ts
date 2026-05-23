@@ -6,9 +6,10 @@ import {
   subscribedRooms,
 } from "./room.state";
 import { convertToSocketData } from "../util/convertToSocketData";
-import { RedisData } from "../types";
+import { CustomWs, RedisData } from "../types";
 import { redisPub, redisSub } from "@repo/redis/dist";
 import { broadcastToRoom } from "../helpers/ws.helper";
+import { WebSocketServer } from "ws";
 
 /** Record activity so the idle sweeper resets the clock. */
 export function touchRoom(roomId: string): void {
@@ -19,10 +20,10 @@ export function touchRoom(roomId: string): void {
 /** Delete every Redis key that belongs to a room. */
 async function purgeRoomFromRedis(roomId: string): Promise<void> {
   const keys = [
-    `room:${roomId}:shapes`,
-    `room:${roomId}:order`,
-    `room:${roomId}:chats`,
+    `room:${roomId}:events`,
     `room:${roomId}:users`,
+    `room:${roomId}:shapes`,
+    `room:${roomId}:chats`,
   ];
   // DEL accepts multiple keys in one round-trip
   await redisPub.del(keys);

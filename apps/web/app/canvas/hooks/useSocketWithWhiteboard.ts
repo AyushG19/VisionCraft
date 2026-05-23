@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useReducer, useRef, useState } from "react";
 import useCanvasInteraction from "./useCanvasInteraction";
 import canvasReducer, { initialCanvasState } from "../utils/canvasReducer";
 import {
@@ -45,6 +39,7 @@ import {
   incomingSocketHandlers,
 } from "../../canvas/helper/socketMessage.helper";
 import { Camera } from "./useCamera";
+import useCanvasRenderer from "./useCanvasRenderer";
 
 export const useSocketWithWhiteboard = (): {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -52,8 +47,6 @@ export const useSocketWithWhiteboard = (): {
   textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
   sideToolkitRef: React.RefObject<HTMLDivElement | null>;
   canvasState: CanvasState;
-  // selectedElement: DrawElement | undefined;
-  // setSelectedElement: (shape: DrawElement | undefined) => void;
   selectedElementRef: React.RefObject<DrawElement | undefined>;
   canvasDispatch: React.Dispatch<Action>;
   dispatchWithSocket: (action: Action) => void;
@@ -70,7 +63,6 @@ export const useSocketWithWhiteboard = (): {
   ) => void;
   textEdit: TextEditState;
   setTextEdit: React.Dispatch<React.SetStateAction<TextEditState>>;
-  // finalizeText: () => void;
   finishText: () => void;
   cancelText: () => void;
   inRoom: boolean;
@@ -105,6 +97,7 @@ export const useSocketWithWhiteboard = (): {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const sideToolkitRef = useRef<HTMLDivElement | null>(null);
   const activeElementMap = useRef<ActiveElementMapType>(new Map());
+  const staticDirtyRef = useRef(true);
 
   const {
     inRoom,
@@ -116,119 +109,42 @@ export const useSocketWithWhiteboard = (): {
     memberCursor,
   } = useSocketContext();
 
-  // const { camera } = useCamera(canvasRef, canvasState.toolState.currentTool);
-  // Add these two refs near your other refs
-  const drawnShapesRef = useRef(canvasState.drawnShapes);
-  // const cameraRef = useRef(camera);
+  // 1. This holds scheduleRender so we can pass it down before it exists!
+  const scheduleRenderRef = useRef<() => void>(() => {});
 
-  const setTextState = (partial: Partial<TextStateType>) => {
-    canvasDispatch({ type: "UPD_TEXT_STATE", payload: partial });
-  };
-  const setEditorState = (partial: Partial<SideToolKitState>) => {
-    canvasDispatch({ type: "UPD_EDITOR", payload: partial });
-  };
+  // 2. Protects the WebSocket from stale closures and disconnects!
+  const onMessageRef = useRef<((event: ServerSocketDataType) => void) | null>(
+    null,
+  );
 
-  const onMessage = (event: ServerSocketDataType) => {
-    try {
-      // if (event.type !== "CURSOR") {
-      //   console.log(event);
-      // }
-      const handler = incomingSocketHandlers[event.type];
-      handler({
-        canvasDispatch,
-        event,
-        memberCursorMap: memberCursor.current,
-        setMessages,
-        setRoomInfo,
-        activeElementMap: activeElementMap.current,
-      });
-    } catch (error) {
-      console.error("Failed to parse WebSocket message:", error);
+  const stableOnMessage = useCallback((event: ServerSocketDataType) => {
+    if (onMessageRef.current) {
+      onMessageRef.current(event);
     }
-  };
+  }, []);
 
-  const { send, connect, disconnect } = useCanvasSocket(onMessage);
+  const { send, connect, disconnect } = useCanvasSocket(stableOnMessage);
 
-  const sendCursorState = (pos: PointType) => {
-    send("CURSOR", pos);
-  };
-
-  const clearCanvas = () => {
-    dispatchWithSocket({ type: "CLEAR_CANVAS" });
-  };
-
-  const handleJoinRoom = async (code: string) => {
-    try {
-      const data = await joinRoomService(code);
-      const roomUsers = data.users.map((user) => generateUserObject(user));
-      setRoomInfo({
-        ...roomInfo,
-        roomId: data.roomId,
-        slug: code,
-        users: roomUsers,
-      });
-
-      canvasDispatch({ type: "INITIALIZE_BOARD", payload: data.canvasState });
-
-      setToken(data.token);
-      connect(data.roomId, code, data.token);
-
-      console.log("From page handleJoinRoom: ", data);
-    } catch (error) {
-      //@ts-ignore
-      console.error("error in join room : ", error.message);
-      throw new AppError("Error joining a ROOM,Try agian!", "SERVER_ERROR");
-    }
-  };
-
-  const handleCreateRoom = async () => {
-    try {
-      const res = await createRoomService();
-      if (!res) throw new Error("Error in ROOM creation.");
-      console.log("joinig room now ");
-      return await handleJoinRoom(res.slug);
-    } catch (error) {
-      throw new Error("Error in handle Room create");
-    }
-  };
-
-  const handleLeaveRoom = async () => {
-    try {
-      disconnect();
-      setRoomInfo({ ...roomInfo, roomId: "", slug: "" });
-      setToken("");
-
-      console.log("From page handleLeaveRoom: ");
-    } catch (error) {
-      console.error("error in join room");
-    }
-  };
+  const sendCursorState = (pos: PointType) => send("CURSOR", pos);
 
   const dispatchWithSocket = useCallback(
     (action: Action) => {
       canvasDispatch(action);
-
       if (!send) return;
 
       switch (action.type) {
         case "ADD_SHAPE":
           send("ADD_SHAPE", action.payload);
           break;
-
         case "UPD_SHAPE":
-          // const updFn = send;
-          // const dbUpdate = debounce(updFn, 1000);
           send("UPD_SHAPE", action.payload);
           break;
-
         case "DEL_SHAPE":
           send("DEL_SHAPE", action.payload);
           break;
-
         case "CLEAR_CANVAS":
           send("CLEAR_CANVAS", {});
           break;
-
         case "BULK_DEL_SHAPE":
           send("BULK_DEL_SHAPE", action.payload);
           break;
@@ -249,11 +165,13 @@ export const useSocketWithWhiteboard = (): {
           break;
         case "DESELECT":
           send("DESELECT", {});
+          break;
       }
     },
     [send],
   );
 
+  // 3.It generates cameraRef and selectedElementRef
   const {
     cameraRef,
     cancelText,
@@ -272,75 +190,128 @@ export const useSocketWithWhiteboard = (): {
     inRoom,
     sideToolkitRef.current,
     sendActiveElementUpdate,
-    memberCursor,
+    () => scheduleRenderRef.current(), //bridge here
     activeElementMap,
+    staticDirtyRef,
   );
 
-  // useEffect(() => {
-  //   if (!selectedShape)
-  //     sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-  // }, [selectedShape]);
-  // Keep them in sync on every render
-  useEffect(() => {
-    drawnShapesRef.current = canvasState.drawnShapes;
-  }, [canvasState.drawnShapes]);
+  // 4. Now it has access to the refs it needs!
+  const { scheduleRender } = useCanvasRenderer(
+    canvasRef,
+    canvasState,
+    selectedElementRef,
+    cameraRef,
+    memberCursor,
+    activeElementMap,
+    staticDirtyRef,
+  );
 
-  // Now redrawForActiveElement always reads fresh values
-  // const redrawForActiveElement = (element: DrawElement, color: string) => {
-  //   const ctx = canvasRef.current?.getContext("2d");
-  //   if (!ctx) return;
+  // Bind the real scheduleRender to our Bridge Ref
+  scheduleRenderRef.current = scheduleRender;
 
-  //   redrawPreviousShapes(
-  //     ctx,
-  //     drawnShapesRef.current,
-  //     camera,
-  //     element,
-  //     element.id,
-  //     color,
-  //   );
-  // };
-  // useRafLoop({
-  //   cursorMap: memberCursor.current,
-  //   activeElementMap: activeElementMap.current,
-  //   redrawForActiveElement,
-  //   camera: camera,
-  // });
+  // 5. Handles remote events with live data
+  onMessageRef.current = (event: ServerSocketDataType) => {
+    try {
+      const handler = incomingSocketHandlers[event.type];
+      if (!handler) return;
+
+      handler({
+        canvasDispatch,
+        event,
+        memberCursorMap: memberCursor.current,
+        setMessages,
+        setRoomInfo,
+        activeElementMap: activeElementMap.current,
+        scheduleRender,
+      });
+
+      // If the event mutates state (by others aslo), dirty the static layer
+      const staticMutatingEvents = [
+        "ADD_SHAPE",
+        "UPD_SHAPE",
+        "DEL_SHAPE",
+        "BULK_DEL_SHAPE",
+        "DESELECT",
+      ];
+      if (staticMutatingEvents.includes(event.type)) {
+        staticDirtyRef.current = true;
+      }
+    } catch (error) {
+      console.error("Failed to parse WebSocket message:", error);
+    }
+  };
+
+  const clearCanvas = () => dispatchWithSocket({ type: "CLEAR_CANVAS" });
+
+  const handleJoinRoom = async (code: string) => {
+    try {
+      const data = await joinRoomService(code);
+      const roomUsers = data.users.map((user) => generateUserObject(user));
+      setRoomInfo({
+        ...roomInfo,
+        roomId: data.roomId,
+        slug: code,
+        users: roomUsers,
+      });
+      canvasDispatch({ type: "INITIALIZE_BOARD", payload: data.canvasState });
+      setToken(data.token);
+      connect(data.roomId, code, data.token);
+    } catch (error) {
+      console.error("error in join room : ", error);
+      throw new AppError("Error joining a ROOM,Try agian!", "SERVER_ERROR");
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    try {
+      const res = await createRoomService();
+      if (!res) throw new Error("Error in ROOM creation.");
+      return await handleJoinRoom(res.slug);
+    } catch (error) {
+      throw new Error("Error in handle Room create");
+    }
+  };
+
+  const handleLeaveRoom = async () => {
+    try {
+      disconnect();
+      setRoomInfo({ ...roomInfo, roomId: "", slug: "" });
+      setToken("");
+    } catch (error) {
+      console.error("error in leave room");
+    }
+  };
+
+  const setTextState = (partial: Partial<TextStateType>) =>
+    canvasDispatch({ type: "UPD_TEXT_STATE", payload: partial });
+  const setEditorState = (partial: Partial<SideToolKitState>) =>
+    canvasDispatch({ type: "UPD_EDITOR", payload: partial });
 
   const handleToolSelect = (toolName: AllToolTypes) => {
     if (toolName === "color") return;
     canvasDispatch({ type: "CHANGE_TOOL", payload: toolName });
-
-    // if (toolName !== "select" && selectedElement) {
-    //   setSelectedElement(undefined);
-    // }
   };
 
-  /**Handling color of stroke */
   const handleColorSelect = (
     color: { l: number; c: number; h: number },
     shape?: ShapeType | LinearType | PencilType,
   ) => {
-    console.log("handle color selct stroke");
     if (shape) {
-      console.log("shape hai ", shape);
       const newShape: ShapeType | LinearType | PencilType = {
         ...shape,
         strokeColor: color,
       };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       selectedElementRef.current = newShape;
-      // setSelectedElement(newShape);
       return;
     }
     canvasDispatch({ type: "CHANGE_COLOR", payload: color });
   };
 
-  /**For size handling of stroke */
   const handleStrokeSelect = (
     size: number,
     shape?: ShapeType | LinearType | PencilType,
   ) => {
-    console.log("handle stroke select size");
     if (shape) {
       const newShape: ShapeType | LinearType | PencilType = {
         ...shape,
@@ -348,21 +319,16 @@ export const useSocketWithWhiteboard = (): {
       };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       selectedElementRef.current = newShape;
-      // setSelectedElement(newShape);
       return;
     }
     canvasDispatch({ type: "CHANGE_BRUSHSIZE", payload: size });
   };
 
-  /**Handling background color of shapes */
   const handleFillSelect = (color?: ColorType, shape?: ShapeType) => {
-    console.log("handle fill select");
     if (shape) {
-      console.log("shape", shape);
       const newShape: ShapeType = { ...shape, fillColor: color };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       selectedElementRef.current = newShape;
-      // setSelectedElement(newShape);
       return;
     }
   };
@@ -378,16 +344,15 @@ export const useSocketWithWhiteboard = (): {
       };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       selectedElementRef.current = newShape;
-      // setSelectedElement(newShape);
       return;
     }
   };
+
   const handleElementDelete = (element: DrawElement) => {
     if (element) {
       const newElement: DrawElement = { ...element, isDeleted: true };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newElement });
       selectedElementRef.current = newElement;
-      // setSelectedElement(newElement);
       return;
     }
   };
@@ -403,7 +368,6 @@ export const useSocketWithWhiteboard = (): {
       }
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
       selectedElementRef.current = newShape;
-      // setSelectedElement(newShape);
       return;
     }
   };
@@ -413,7 +377,6 @@ export const useSocketWithWhiteboard = (): {
       const newText: TextType = { ...shape, fontSize: size };
       dispatchWithSocket({ type: "UPD_SHAPE", payload: newText });
       selectedElementRef.current = newText;
-      // setSelectedElement(newText);
       return;
     }
   };
@@ -423,26 +386,18 @@ export const useSocketWithWhiteboard = (): {
       const newText: TextType = { ...shape, fontFamily: font };
       canvasDispatch({ type: "UPD_SHAPE", payload: newText });
       selectedElementRef.current = newText;
-      // setSelectedElement(newText);
       return;
     }
   };
 
-  const handleRedo = () => {
-    canvasDispatch({ type: "REDO" });
-  };
-
-  const handleUndo = () => {
-    canvasDispatch({ type: "UNDO" });
-  };
+  const handleRedo = () => canvasDispatch({ type: "REDO" });
+  const handleUndo = () => canvasDispatch({ type: "UNDO" });
 
   return {
     canvasRef,
     inputRef,
     textAreaRef,
     canvasState,
-    // selectedElement,
-    // setSelectedElement,
     selectedElementRef,
     canvasDispatch,
     dispatchWithSocket,
