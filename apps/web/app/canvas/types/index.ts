@@ -37,7 +37,7 @@ export type SideToolKitState = {
 export type Action =
   | { type: "INITIALIZE_BOARD"; payload: DrawElement[] }
   | { type: "ADD_SHAPE"; payload: DrawElement }
-  | { type: "DEL_SHAPE"; payload: string }
+  | { type: "DEL_SHAPE"; payload: string[] }
   | { type: "UPD_SHAPE"; payload: DrawElement }
   | { type: "FINISH_SHAPE"; payload: DrawElement }
   | { type: "REDO" }
@@ -55,27 +55,31 @@ export interface ChatModalProps {
   messages: ServerChatSchemaType[];
   setMessages: React.Dispatch<React.SetStateAction<ServerChatSchemaType[]>>;
 }
-export type DragStateType = {
-  isDragging: boolean;
-  draggedShapeId: string | null;
-  offsetX: number;
-  offsetY: number;
-  originalShape: DrawElement;
+export type GroupDragOffset = {
+  id: string;
+  dx: number;
+  dy: number;
 };
-export type ResizeStateType = {
-  isResizing: boolean;
-  resizeDirection: HandleName | null;
-  originalShape: DrawElement;
-};
+
 export type InteractionState = {
   isDrawing: boolean;
   isDragging: boolean;
   isResizing: boolean;
-  draggedShapeId: string | null;
   resizeDirection: HandleName | null;
   startPos: { x: number; y: number };
-  dragOffset: { x: number; y: number };
   originalShape: DrawElement | null;
+  groupDragOffsets: GroupDragOffset[];
+};
+
+export type DragStateType = {
+  isDragging: boolean;
+  groupDragOffsets: GroupDragOffset[];
+};
+
+export type ResizeStateType = {
+  isResizing: boolean;
+  resizeDirection: HandleName | null;
+  originalShape: DrawElement;
 };
 
 export type EventType = {

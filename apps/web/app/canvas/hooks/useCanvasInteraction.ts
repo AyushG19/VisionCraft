@@ -13,6 +13,7 @@ import {
   Action,
   ActiveElementMapType,
   CanvasState,
+  InteractionState,
   TextEditState,
 } from "../types";
 import resizeCanvas from "../utils/canvasResizeHelper";
@@ -27,7 +28,10 @@ import { createNewImage, createNewText } from "../utils/createNewShape";
 import { measureText } from "../helper/canvas.helper";
 import { isClickOnShape } from "../utils/isPointInShape";
 import { updateCursor } from "../helper/cursorUpdate.helper";
-import { createSelectInteraction } from "../helper/selectInteraction.helper";
+import {
+  createSelectInteraction,
+  MarqueeState,
+} from "../helper/selectInteraction.helper";
 import createDrawInteraction from "../helper/drawingInteraction.helper";
 
 const useCanvasInteraction = (
@@ -45,16 +49,19 @@ const useCanvasInteraction = (
   activeElementMapRef: React.RefObject<ActiveElementMapType>,
   staticDirtyRef: React.MutableRefObject<boolean>,
 ): {
-  selectedElementRef: React.RefObject<DrawElement | undefined>;
+  selectedElementsRef: React.RefObject<DrawElement[]>;
+  marqueeStateRef: React.RefObject<MarqueeState | null>;
   cameraRef: React.RefObject<Camera>;
   cancelText: () => void;
   finishText: () => void;
   textEdit: TextEditState;
   setTextEdit: Dispatch<SetStateAction<TextEditState>>;
+  interactionState: React.RefObject<InteractionState>;
 } => {
   const [textEdit, setTextEdit] = useState<TextEditState>(null);
   const interactionState = useInteractionState();
-  const selectedElementRef = interactionState.tempShapeRef;
+  const selectedElementsRef = interactionState.tempShapesRef; // DrawElement[]
+  const marqueeStateRef = useRef<MarqueeState | null>(null);
 
   const markStaticDirty = useCallback(() => {
     staticDirtyRef.current = true;
@@ -67,7 +74,7 @@ const useCanvasInteraction = (
   const canvasStateRef = useRef(canvasState);
   useEffect(() => {
     canvasStateRef.current = canvasState;
-  }); // runs every render to prevent stale closures
+  });
 
   const finishText = useCallback(() => {
     if (!textEdit || !canvasRef.current) return;
@@ -96,9 +103,7 @@ const useCanvasInteraction = (
     setTextEdit(null);
   }, [textEdit, canvasState.textState, cameraRef, dispatchWithSocket]);
 
-  const cancelText = useCallback(() => {
-    setTextEdit(null);
-  }, []);
+  const cancelText = useCallback(() => setTextEdit(null), []);
 
   const selectInteraction = createSelectInteraction(interactionState);
   const drawInteraction = createDrawInteraction(interactionState);
@@ -107,32 +112,23 @@ const useCanvasInteraction = (
     const tool = canvasState.toolState.currentTool;
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     updateCursor(
       canvas,
       tool,
       screenToWorld(0, 0, cameraRef.current),
-      selectedElementRef,
+      selectedElementsRef,
       canvasState.drawnShapes,
       isPanning.current,
       false,
       interactionState.interaction.current.isDragging,
       interactionState.interaction.current.isResizing,
     );
-  }, [
-    canvasState.toolState.currentTool,
-    cameraRef,
-    selectedElementRef,
-    canvasState.drawnShapes,
-    isPanning,
-    interactionState.interaction,
-  ]);
+  }, [canvasState.toolState.currentTool]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const fileInput = inputRef.current;
     if (!canvas || !fileInput) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -147,8 +143,6 @@ const useCanvasInteraction = (
         canvasStateRef.current.toolState,
       );
     };
-
-    // Initial resize
     handleResize();
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -157,20 +151,18 @@ const useCanvasInteraction = (
 
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
-        selectedElementRef.current
+        selectedElementsRef.current.length > 0
       ) {
         e.preventDefault();
-        dispatchWithSocket({
-          type: "DEL_SHAPE",
-          payload: selectedElementRef.current.id,
-        });
-        // Unlock the shape for other users when deleted
+        const ids = selectedElementsRef.current.map((s) => s.id);
+        dispatchWithSocket({ type: "BULK_DEL_SHAPE", payload: ids });
         sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-        selectedElementRef.current = undefined;
+        selectedElementsRef.current = [];
         markStaticDirty();
+        return;
       }
 
-      if (currentTool === "text") return null;
+      if (currentTool === "text") return;
 
       if (e.key === "q")
         canvasDispatch({ type: "CHANGE_TOOL", payload: "select" });
@@ -200,7 +192,6 @@ const useCanvasInteraction = (
         e.preventDefault();
         canvasDispatch({ type: "UNDO" });
       }
-
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) {
         e.preventDefault();
         canvasDispatch({ type: "REDO" });
@@ -215,60 +206,74 @@ const useCanvasInteraction = (
       );
       const currentState = canvasStateRef.current;
       const tool = currentState.toolState.currentTool;
-      const current = selectedElementRef.current;
+      const prev = selectedElementsRef.current;
 
       if (tool === "select") {
-        const clickedEle = selectInteraction.handleSelectMouseDown(
+        const next = selectInteraction.handleSelectMouseDown(
           pos,
           currentState,
-          selectedElementRef,
+          prev,
           activeElementMapRef,
+          e.shiftKey,
         );
-        // if currently selected shape,and no new shape,make if shape selected flase remove active element from socket for others too
-        if (current?.id === clickedEle?.id) {
+
+        // same selection and same interaction mode — nothing to update
+        if (
+          next.length === prev.length &&
+          next.every((s, i) => s.id === prev[i]?.id)
+        )
           return;
-        }
 
-        if (current) {
+        selectedElementsRef.current = next;
+
+        if (next.length === 0 && prev.length > 0) {
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-          selectedElementRef.current = undefined;
+        } else if (next.length > 0) {
+          sendActiveElementUpdate({ type: "DRAG", payload: next[0]! });
         }
 
-        if (clickedEle) {
-          sendActiveElementUpdate({ type: "DRAG", payload: clickedEle });
-          selectedElementRef.current = clickedEle;
-        }
-        // scheduleRender();
         markStaticDirty();
-      } else if (tool === "text") {
-        e.preventDefault();
-        textAreaRef.current?.blur();
-        const screenPos = { x: e.clientX, y: e.clientY };
-        const canvasPos = getMousePos(canvasRef, screenPos);
+        return;
+      }
 
-        setTextEdit(() => ({
+      if (tool === "text") {
+        // textAreaRef.current?.blur();
+        const canvasPos = getMousePos(canvasRef, {
+          x: e.clientX,
+          y: e.clientY,
+        });
+        setTextEdit({
           elementId: "1",
           text: "",
           x: canvasPos.x,
           y: canvasPos.y,
-        }));
-      } else if (tool === "hand") {
-        onPanStart(e);
-      } else if (tool === "eraser") {
-        interactionState.eraseStateRef.current.isErasing = true;
-      } else {
-        if (selectedElementRef.current) {
-          selectedElementRef.current = undefined;
-          markStaticDirty();
-        }
-        const preview = drawInteraction.handleDrawMouseDown(
-          pos,
-          currentState.toolState,
-          currentState.sideToolKitState,
-        );
-        if (preview) selectedElementRef.current = preview;
-        scheduleRender();
+        });
+        return;
       }
+
+      if (tool === "hand") {
+        onPanStart(e);
+        return;
+      }
+
+      if (tool === "eraser") {
+        interactionState.eraseStateRef.current.isErasing = true;
+        return;
+      }
+
+      // drawing tool — clear any existing selection first
+      if (prev.length > 0) {
+        selectedElementsRef.current = [];
+        markStaticDirty();
+      }
+
+      const preview = drawInteraction.handleDrawMouseDown(
+        pos,
+        currentState.toolState,
+        currentState.sideToolKitState,
+      );
+      if (preview) selectedElementsRef.current = [preview];
+      scheduleRender();
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -284,65 +289,93 @@ const useCanvasInteraction = (
 
       switch (tool) {
         case "select": {
-          const preview = selectInteraction.handleSelectMouseMove(
+          const result = selectInteraction.handleSelectMouseMove(
             pos,
-            selectedElementRef.current,
+            selectedElementsRef.current,
+            currentState,
+            e.shiftKey,
           );
-          if (preview) {
-            selectedElementRef.current = preview;
-            sendActiveElementUpdate({ type: "DRAG", payload: preview });
-            scheduleRender();
+
+          // null = nothing changed, skip render
+          if (!result) break;
+
+          selectedElementsRef.current = result.shapes;
+          marqueeStateRef.current = result.marquee;
+
+          // only send drag signal when actually dragging, not during marquee
+          if (
+            result.marquee === null &&
+            result.shapes[0] &&
+            interactionState.interaction.current.isDragging
+          ) {
+            sendActiveElementUpdate({
+              type: "DRAG",
+              payload: result.shapes[0],
+            });
           }
+
+          scheduleRender();
           break;
         }
+
         case "hand": {
           onPanMove(e);
           break;
         }
+
         case "eraser": {
-          if (!interactionState.eraseStateRef.current.isErasing) return;
-          const clickedShape = [...currentState.drawnShapes].find(
-            (shape: DrawElement) => isClickOnShape(pos, shape),
+          console.log(
+            "Eraser start",
+            interactionState.eraseStateRef.current.isErasing,
           );
-          if (!clickedShape) return;
+          if (!interactionState.eraseStateRef.current.isErasing) return;
+          const clicked = [...currentState.drawnShapes].find((s) =>
+            isClickOnShape(pos, s),
+          );
+          if (!clicked) return;
 
           const isLockedByOther = [
             ...activeElementMapRef.current.values(),
-          ].some((entry) => entry.element.id === clickedShape.id);
-          if (
-            isLockedByOther ||
-            clickedShape.id === selectedElementRef.current?.id
-          )
-            return;
-
+          ].some((e) => e.element.id === clicked.id);
+          const isLocalSelected = selectedElementsRef.current.some(
+            (s) => s.id === clicked.id,
+          );
+          console.log("Eraser prev");
+          if (isLockedByOther || isLocalSelected) return;
+          console.log("Eraser next");
           canvasDispatch({
             type: "UPD_SHAPE",
-            payload: { ...clickedShape, opacity: 0.2 },
+            payload: { ...clicked, opacity: 0.2 },
           });
+          markStaticDirty();
+          scheduleRender();
           interactionState.eraseStateRef.current.elementsToDelete.push(
-            clickedShape.id,
+            clicked.id,
           );
           break;
         }
+
         default: {
-          if (!selectedElementRef.current) break;
+          // drawing — tempShapesRef[0] is the in-progress shape
+          const current = selectedElementsRef.current[0];
+          if (!current) break;
+
           const preview = drawInteraction.handleDrawMouseMove(
             pos,
             currentState.toolState,
             currentState.sideToolKitState,
-            selectedElementRef.current,
+            current,
           );
           if (preview) {
-            selectedElementRef.current = {
-              ...preview,
-              id: selectedElementRef.current.id,
-            };
+            // preserve original id through the preview
+            selectedElementsRef.current = [{ ...preview, id: current.id }];
             sendActiveElementUpdate({
               type: "DRAG",
-              payload: selectedElementRef.current,
+              payload: selectedElementsRef.current[0]!,
             });
             scheduleRender();
           }
+          break;
         }
       }
 
@@ -350,7 +383,7 @@ const useCanvasInteraction = (
         canvas,
         tool,
         pos,
-        selectedElementRef,
+        selectedElementsRef,
         currentState.drawnShapes,
         isPanning.current,
         false,
@@ -371,27 +404,38 @@ const useCanvasInteraction = (
 
       switch (tool) {
         case "select": {
-          const preview = selectInteraction.handleSelectMouseUp(
+          const result = selectInteraction.handleSelectMouseUp(
             pos,
-            selectedElementRef.current,
+            selectedElementsRef.current,
+            currentState,
+            e.shiftKey,
           );
-          if (preview) {
-            selectedElementRef.current = preview;
-            dispatchWithSocket({ type: "UPD_SHAPE", payload: preview });
-            markStaticDirty();
-            scheduleRender();
+
+          selectedElementsRef.current = result.shapes;
+          marqueeStateRef.current = null; // always clear marquee on mouseup
+
+          if (result.didCommit) {
+            result.shapes.forEach((shape) => {
+              dispatchWithSocket({ type: "UPD_SHAPE", payload: shape });
+            });
+            sendActiveElementUpdate({ type: "DESELECT", payload: {} });
           }
+
+          markStaticDirty();
+          scheduleRender();
           break;
         }
+
         case "hand": {
           onPanEnd();
           break;
         }
+
         case "eraser": {
-          dispatchWithSocket({
-            type: "BULK_DEL_SHAPE",
-            payload: interactionState.eraseStateRef.current.elementsToDelete,
-          });
+          const ids = interactionState.eraseStateRef.current.elementsToDelete;
+          if (ids.length > 0) {
+            dispatchWithSocket({ type: "DEL_SHAPE", payload: ids });
+          }
           interactionState.eraseStateRef.current = {
             isErasing: false,
             elementsToDelete: [],
@@ -399,23 +443,25 @@ const useCanvasInteraction = (
           scheduleRender();
           break;
         }
+
         default: {
-          if (!selectedElementRef.current) break;
-          const preview = drawInteraction.handleDrawMouseUp(
+          const current = selectedElementsRef.current[0];
+          const committed = drawInteraction.handleDrawMouseUp(
             pos,
             currentState.toolState,
             currentState.sideToolKitState,
-            selectedElementRef.current,
+            current,
           );
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
-          if (preview) {
+          if (committed && current) {
             dispatchWithSocket({
               type: "ADD_SHAPE",
-              payload: { ...preview, id: selectedElementRef.current.id },
+              payload: { ...committed, id: current.id },
             });
-            markStaticDirty();
           }
-          selectedElementRef.current = undefined;
+          selectedElementsRef.current = [];
+          markStaticDirty();
+          break;
         }
       }
 
@@ -430,17 +476,13 @@ const useCanvasInteraction = (
       const target = e.target as HTMLInputElement;
       const fileList = target.files;
       if (!fileList || fileList.length === 0) return;
-
       const lastImg = fileList[fileList.length - 1]!;
-
-      // Reset input so the same file can be uploaded again if deleted
       target.value = "";
 
       const worker = new Worker(
         new URL("../../worker/worker.ts", import.meta.url),
       );
       const imgBitmap = await createImageBitmap(lastImg);
-
       worker.postMessage({ imgBitmap });
       worker.onmessage = async (message) => {
         const compressedBlob = message.data;
@@ -452,15 +494,15 @@ const useCanvasInteraction = (
           canvasState.toolState.currentColor,
           canvasState.toolState.strokeSize,
         );
-
         await set(newImage.id, compressedBlob);
         imageCache.set(newImage.id, compressedBitmap);
         dispatchWithSocket({ type: "ADD_SHAPE", payload: newImage });
-
         if (inRoom) {
           storeImg(compressedBlob).then((res: any) => {
-            const updatedShape = { ...newImage, link: res };
-            dispatchWithSocket({ type: "UPD_SHAPE", payload: updatedShape });
+            dispatchWithSocket({
+              type: "UPD_SHAPE",
+              payload: { ...newImage, link: res },
+            });
           });
         }
       };
@@ -483,29 +525,17 @@ const useCanvasInteraction = (
       window.removeEventListener("keydown", onKeyDown);
       fileInput.removeEventListener("change", handleFileInput);
     };
-  }, [
-    inRoom,
-    cameraRef,
-    dispatchWithSocket,
-    sendActiveElementUpdate,
-    markStaticDirty,
-    onPanEnd,
-    onPanMove,
-    onPanStart,
-    onWheel,
-    scheduleRender,
-    selectInteraction,
-    drawInteraction,
-    interactionState,
-  ]);
+  }, [inRoom, cameraRef]);
 
   return {
-    selectedElementRef,
+    selectedElementsRef,
+    marqueeStateRef,
     cameraRef,
     cancelText,
     finishText,
     textEdit,
     setTextEdit,
+    interactionState: interactionState.interaction,
   };
 };
 

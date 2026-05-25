@@ -9,6 +9,7 @@ import {
   drawSmoothPencilPath,
 } from "../helper/drawShape.helper";
 import { measureText } from "../helper/canvas.helper";
+import { ShapeBounds } from "./getBoundsHelpers";
 
 // Type definitions for better type safety
 interface Point {
@@ -24,7 +25,19 @@ interface ColorType {
   a?: number;
 }
 
-// Type guard to check if shape has points
+export const drawGroupBoundingBox = (
+  ctx: CanvasRenderingContext2D,
+  bounds: { x: number; y: number; width: number; height: number },
+  cam: Camera,
+) => {
+  ctx.save();
+  ctx.strokeStyle = "#6965db";
+  ctx.lineWidth = 1 / cam.z; // stays 1px regardless of zoom
+  ctx.setLineDash([5 / cam.z, 3 / cam.z]);
+  ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+  ctx.restore();
+};
+
 const hasPoints = (
   shape: DrawElement,
 ): shape is DrawElement & { points: Point[] } => {
@@ -79,38 +92,48 @@ const handleStrokeType = (
   }
 };
 // Highlight selected shape (outline + handles)
-const highlightShape = (
+export const highlightShape = (
   ctx: CanvasRenderingContext2D,
-  shape: DrawElement,
-  bounds: { x: number; y: number; width: number; height: number },
+  bounds: ShapeBounds,
   zoom: number,
   highlightColor: string,
 ) => {
   ctx.save();
   ctx.beginPath();
-  // ctx.setLineDash([6 / zoom, 2 / zoom]);
   ctx.strokeStyle = highlightColor;
   ctx.lineWidth = 1 / zoom;
+  bounds.type === "marquee" && ctx.setLineDash([6 / zoom, 2 / zoom]);
 
-  ctx.strokeRect(
-    bounds.x - 5 / zoom,
-    bounds.y - 5 / zoom,
-    bounds.width + 10 / zoom,
-    bounds.height + 10 / zoom,
-  );
+  // if (bounds.type === "marquee" || bounds.type === "rect") {
+  if (bounds.type === "points") {
+    bounds.points.forEach((p) => {
+      ctx.moveTo(p.x + 5 / zoom, p.y);
 
+      ctx.ellipse(p.x, p.y, 5 / zoom, 5 / zoom, 0, 0, Math.PI * 2);
+    });
+
+    ctx.stroke();
+  } else {
+    ctx.strokeRect(
+      bounds.x - 5 / zoom,
+      bounds.y - 5 / zoom,
+      bounds.width + 10 / zoom,
+      bounds.height + 10 / zoom,
+    );
+  }
   // Draw resize handles
-  drawHandles(
-    ctx,
-    {
-      x: bounds.x - 5 / zoom,
-      y: bounds.y - 5 / zoom,
-      width: bounds.width + 10 / zoom,
-      height: bounds.height + 10 / zoom,
-    },
-    undefined,
-    zoom,
-  );
+  if (bounds.type === "rect")
+    drawHandles(
+      ctx,
+      {
+        x: bounds.x - 5 / zoom,
+        y: bounds.y - 5 / zoom,
+        width: bounds.width + 10 / zoom,
+        height: bounds.height + 10 / zoom,
+      },
+      undefined,
+      zoom,
+    );
   ctx.restore();
 };
 
@@ -147,6 +170,7 @@ export const drawShape = (
   ctx: CanvasRenderingContext2D,
   shape: DrawElement,
   camera: Camera,
+  multiselect: boolean,
   selectedShapeId?: string,
   highlightColor: string = "#43D9FF",
 ): void => {
@@ -276,7 +300,7 @@ export const drawShape = (
         width: shape.width,
         height: shape.height,
       };
-      highlightShape(ctx, shape, bounds, zoom, highlightColor);
+      highlightShape(ctx, { ...bounds, type: "rect" }, zoom, highlightColor);
       return;
     }
 
@@ -293,22 +317,33 @@ export const drawShape = (
         width: width,
         height: height,
       };
-      highlightShape(ctx, shape, bounds, zoom, highlightColor);
+      highlightShape(ctx, { ...bounds, type: "rect" }, zoom, highlightColor);
       return;
     }
 
     if (
       shape.type === "line" ||
-      shape.type === "arrow" ||
-      shape.type === "pencil"
-    )
+      shape.type === "arrow"
+      // shape.type === "pencil"
+    ) {
+      const points: PointType[] = shape.points.map((s) => ({
+        x: shape.startX + s.x,
+        y: shape.startY + s.y,
+      }));
+      highlightShape(ctx, { type: "points", points }, zoom, highlightColor);
       return;
+    }
 
     if ("endX" in shape && "endY" in shape) {
       const width = shape.endX - shape.startX;
       const height = shape.endY - shape.startY;
       const bounds = { x: shape.startX, y: shape.startY, width, height };
-      highlightShape(ctx, shape, bounds, zoom, highlightColor);
+      highlightShape(
+        ctx,
+        { ...bounds, type: multiselect ? "none" : "rect" },
+        zoom,
+        highlightColor,
+      );
     }
   }
 };

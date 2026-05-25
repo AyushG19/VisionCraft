@@ -117,7 +117,7 @@ const Page = () => {
           ),
       )}
       <SideToolkit
-        selectedShape={wb.selectedElementRef.current}
+        selectedShape={wb.selectedElementsRef.current[0]}
         tool={wb.canvasState.toolState.currentTool}
         onChange={() => {}}
         onDelete={() => {}}

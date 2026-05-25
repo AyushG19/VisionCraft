@@ -8,35 +8,34 @@ const useInteractionState = () => {
     isDrawing: false,
     isDragging: false,
     isResizing: false,
-    draggedShapeId: null,
     resizeDirection: null,
     startPos: { x: 0, y: 0 },
-    dragOffset: { x: 0, y: 0 },
     originalShape: null,
+    groupDragOffsets: [], // ← replaces dragOffset + draggedShapeId
   });
 
-  const tempShapeRef = useRef<DrawElement | undefined>(undefined);
+  const tempShapesRef = useRef<DrawElement[]>([]);
+
   const eraseStateRef = useRef<{
     isErasing: boolean;
     elementsToDelete: string[];
   }>({ isErasing: false, elementsToDelete: [] });
 
-  //here we write
+  // accepts single shape or array — single is just array of one
   const startDrag = useCallback(
     (
-      shape: DrawElement,
+      shapes: DrawElement | DrawElement[],
       clickPos: { x: number; y: number },
-      shapeOrigin: { x: number; y: number },
     ) => {
+      const arr = Array.isArray(shapes) ? shapes : [shapes];
       interactionRef.current = {
         ...interactionRef.current,
         isDragging: true,
-        draggedShapeId: shape.id,
-        dragOffset: {
-          x: clickPos.x - shapeOrigin.x,
-          y: clickPos.y - shapeOrigin.y,
-        },
-        originalShape: { ...shape },
+        groupDragOffsets: arr.map((s) => ({
+          id: s.id,
+          dx: clickPos.x - s.startX,
+          dy: clickPos.y - s.startY,
+        })),
       };
     },
     [],
@@ -65,23 +64,19 @@ const useInteractionState = () => {
   const resetDragAndResize = useCallback(() => {
     interactionRef.current.isDragging = false;
     interactionRef.current.isResizing = false;
-    interactionRef.current.draggedShapeId = null;
     interactionRef.current.resizeDirection = null;
     interactionRef.current.originalShape = null;
+    interactionRef.current.groupDragOffsets = [];
   }, []);
 
   const stopDrawing = useCallback(() => {
     interactionRef.current.isDrawing = false;
   }, []);
 
-  // raders
   const getDragState = useCallback(
     (): DragStateType => ({
-      draggedShapeId: interactionRef.current.draggedShapeId,
       isDragging: interactionRef.current.isDragging,
-      offsetX: interactionRef.current.dragOffset.x,
-      offsetY: interactionRef.current.dragOffset.y,
-      originalShape: interactionRef.current.originalShape!,
+      groupDragOffsets: interactionRef.current.groupDragOffsets,
     }),
     [],
   );
@@ -97,7 +92,7 @@ const useInteractionState = () => {
 
   return {
     interaction: interactionRef,
-    tempShapeRef,
+    tempShapesRef,
     startDrag,
     startResize,
     startDrawing,

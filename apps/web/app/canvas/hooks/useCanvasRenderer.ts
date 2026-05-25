@@ -1,29 +1,36 @@
-import { useEffect, useRef, RefObject } from "react";
+import React, { useEffect, useRef, RefObject } from "react";
 import { DrawElement } from "@repo/common";
 import { MemberCursor } from "@repo/hooks";
 import { Camera } from "./useCamera";
-import { ActiveElementMapType, CanvasState } from "../types";
+import { ActiveElementMapType, CanvasState, InteractionState } from "../types";
+import { MarqueeState } from "../helper/selectInteraction.helper";
 import useRafLoop from "./useRafLoop";
 
 const useCanvasRenderer = (
   canvasRef: RefObject<HTMLCanvasElement | null>,
   canvasState: CanvasState,
-  selectedElementRef: RefObject<DrawElement | undefined>,
-  cameraRef: RefObject<Camera>, // ← ref directly from useCamera
+  selectedElementsRef: RefObject<DrawElement[]>,
+  marqueeStateRef: RefObject<MarqueeState | null>,
+  cameraRef: RefObject<Camera>,
   cursorMapRef: RefObject<MemberCursor>,
   activeElementMapRef: RefObject<ActiveElementMapType>,
-  staticDirtyRef: RefObject<boolean>, // ← owned by useCanvasInteraction
+  staticDirtyRef: RefObject<boolean>,
+  interactionState: React.RefObject<InteractionState>,
 ) => {
   const canvasStateRef = useRef(canvasState);
   const prevDrawnShapesRef = useRef(canvasState.drawnShapes);
-  const prevSelectedIdRef = useRef(selectedElementRef.current?.id);
 
-  // Sync canvasState ref + detect static layer changes every render
+  // track selection as joined id string — handles single, multi, and empty
+  const prevSelectedKeyRef = useRef(
+    selectedElementsRef.current.map((s) => s.id).join(","),
+  );
+
   useEffect(() => {
     const shapesChanged =
       prevDrawnShapesRef.current !== canvasState.drawnShapes;
-    const selectionChanged =
-      prevSelectedIdRef.current !== selectedElementRef.current?.id;
+
+    const currentKey = selectedElementsRef.current.map((s) => s.id).join(",");
+    const selectionChanged = prevSelectedKeyRef.current !== currentKey;
 
     if (shapesChanged || selectionChanged) {
       staticDirtyRef.current = true;
@@ -31,18 +38,21 @@ const useCanvasRenderer = (
 
     canvasStateRef.current = canvasState;
     prevDrawnShapesRef.current = canvasState.drawnShapes;
-    prevSelectedIdRef.current = selectedElementRef.current?.id;
-  }); // no deps — runs every render
+    prevSelectedKeyRef.current = currentKey;
+  });
 
   const { scheduleRender } = useRafLoop({
     canvasRef,
     canvasStateRef,
-    selectedElementRef,
+    selectedElementsRef,
+    marqueeStateRef,
     cameraRef,
     cursorMapRef,
     activeElementMapRef,
     staticDirtyRef,
+    interactionState,
   });
+
   return { scheduleRender };
 };
 

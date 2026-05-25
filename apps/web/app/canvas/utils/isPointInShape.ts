@@ -1,5 +1,7 @@
 import { DrawElement, PointType } from "@repo/common";
 import { Bounds, getHandles, HandleName } from "../../lib/getHandles";
+import { ShapeBounds } from "./getBoundsHelpers";
+import { only } from "node:test";
 
 // Helper function to check if point is near a line segment
 const isPointNearLine = (
@@ -319,15 +321,43 @@ export function isClickOnShape(
 export const isPointInHandle = (
   px: number,
   py: number,
-  bounds: Bounds,
+  bounds: ShapeBounds,
   handleSize: number = 15,
-  selectedElement?: DrawElement | undefined,
-  zoom: number = 1, // 👈 ADD ZOOM
+  zoom: number = 1,
 ): HandleName | null => {
-  // 1. HIT TEST THE CORNER HAND
   const handleHitBoxSize = (handleSize + 10) / zoom;
 
-  const handles = getHandles(bounds, handleSize / zoom);
+  if (bounds.type === "points") {
+    console.log("points");
+    const radius = 5 / zoom;
+    const hitRadius = radius / zoom;
+
+    for (const p of bounds.points) {
+      console.log(p, { px, py });
+      const dx = px - p.x;
+      const dy = py - p.y;
+
+      const distance =
+        (dx * dx) / (hitRadius * hitRadius) +
+        (dy * dy) / (hitRadius * hitRadius);
+
+      if (distance <= 1) {
+        return "POINT";
+      }
+    }
+
+    return null;
+  }
+
+  const handles = getHandles(
+    {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    },
+    handleSize / zoom,
+  );
 
   for (const h of handles) {
     // Calculate the center of the handle
@@ -346,16 +376,13 @@ export const isPointInHandle = (
     }
   }
 
-  // 2. HIT TEST THE EDGES (LEFT, RIGHT, TOP, BOTTOM)
-  if (!selectedElement || !("endX" in selectedElement)) return null;
-
-  const minX = Math.min(selectedElement.startX, selectedElement.endX);
-  const maxX = Math.max(selectedElement.startX, selectedElement.endX);
-  const minY = Math.min(selectedElement.startY, selectedElement.endY);
-  const maxY = Math.max(selectedElement.startY, selectedElement.endY);
+  const minX = bounds.x;
+  const minY = bounds.y;
+  const maxX = bounds.x + bounds.width;
+  const maxY = bounds.y + bounds.height;
 
   const SCREEN_PADDING = 5;
-  const tol = (selectedElement.strokeWidth || 2) / 2 + SCREEN_PADDING / zoom;
+  const tol = SCREEN_PADDING / zoom;
 
   if (Math.abs(px - minX) <= tol && py >= minY - tol && py <= maxY + tol)
     return "LEFT";

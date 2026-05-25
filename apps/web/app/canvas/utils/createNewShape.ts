@@ -49,7 +49,7 @@ export function createNewShape(
       startX: startPos.x,
       startY: startPos.y,
       points: [
-        { x: startPos.x, y: startPos.y },
+        { x: 0, y: 0 },
         { x: currentPos.x - startPos.x, y: currentPos.y - startPos.y },
         { x: currentPos.x - startPos.x, y: currentPos.y - startPos.y },
       ],

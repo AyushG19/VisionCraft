@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useReducer, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import useCanvasInteraction from "./useCanvasInteraction";
 import canvasReducer, { initialCanvasState } from "../utils/canvasReducer";
 import {
@@ -41,63 +47,23 @@ import {
 import { Camera } from "./useCamera";
 import useCanvasRenderer from "./useCanvasRenderer";
 
-export const useSocketWithWhiteboard = (): {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
-  sideToolkitRef: React.RefObject<HTMLDivElement | null>;
-  canvasState: CanvasState;
-  selectedElementRef: React.RefObject<DrawElement | undefined>;
-  canvasDispatch: React.Dispatch<Action>;
-  dispatchWithSocket: (action: Action) => void;
-  handleToolSelect: (toolName: AllToolTypes) => void;
-  handleColorSelect: (color: { l: number; c: number; h: number }) => void;
-  handleStrokeSelect: (size: number) => void;
-  handleRedo: () => void;
-  handleUndo: () => void;
-  messages: ServerMessageType[];
-  setMessages: React.Dispatch<React.SetStateAction<ServerMessageType[]>>;
-  send: (
-    type: SendPropsType["type"],
-    payload: SendPropsType["payload"],
-  ) => void;
-  textEdit: TextEditState;
-  setTextEdit: React.Dispatch<React.SetStateAction<TextEditState>>;
-  finishText: () => void;
-  cancelText: () => void;
-  inRoom: boolean;
-  isOpen: boolean;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  handleLeaveRoom: () => void;
-  handleJoinRoom: (code: string) => Promise<void>;
-  handleCreateRoom: () => Promise<void>;
-  slug: string;
-  handleElementDelete: (element: DrawElement) => void;
-  handleStrokeStyle: (
-    style: "dash" | "dotted" | "normal",
-    element?: ShapeType | LinearType | PencilType,
-  ) => void;
-  handleFillSelect: (color?: ColorType, shape?: ShapeType) => void;
-  setEditorState: (partial: Partial<SideToolKitState>) => void;
-  setTextState: (partial: Partial<TextStateType>) => void;
-  handleFontSelect: (font: FontTypes, shape: ShapeType | TextType) => void;
-  handleFontSize: (size: number, shape?: TextType) => void;
-  handleFontFamily: (font: AllowedFonts, shape?: TextType) => void;
-  clearCanvas: () => void;
-  users: RoomInfo["users"];
-  cameraRef: React.RefObject<Camera>;
-} => {
+export const useSocketWithWhiteboard = () => {
   const [canvasState, canvasDispatch] = useReducer(
     canvasReducer,
     initialCanvasState,
   );
-  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [messages, setMessages] = useState<ServerMessageType[]>([]);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const sideToolkitRef = useRef<HTMLDivElement | null>(null);
   const activeElementMap = useRef<ActiveElementMapType>(new Map());
   const staticDirtyRef = useRef(true);
+  const scheduleRenderRef = useRef<() => void>(() => {});
+  const onMessageRef = useRef<((event: ServerSocketDataType) => void) | null>(
+    null,
+  );
 
   const {
     inRoom,
@@ -109,29 +75,24 @@ export const useSocketWithWhiteboard = (): {
     memberCursor,
   } = useSocketContext();
 
-  // 1. This holds scheduleRender so we can pass it down before it exists!
-  const scheduleRenderRef = useRef<() => void>(() => {});
-
-  // 2. Protects the WebSocket from stale closures and disconnects!
-  const onMessageRef = useRef<((event: ServerSocketDataType) => void) | null>(
-    null,
-  );
-
   const stableOnMessage = useCallback((event: ServerSocketDataType) => {
-    if (onMessageRef.current) {
-      onMessageRef.current(event);
-    }
+    onMessageRef.current?.(event);
   }, []);
 
   const { send, connect, disconnect } = useCanvasSocket(stableOnMessage);
 
-  const sendCursorState = (pos: PointType) => send("CURSOR", pos);
+  const sendCursorState = useCallback(
+    (pos: PointType) => {
+      if (!inRoom) return;
+      send("CURSOR", pos);
+    },
+    [send, inRoom],
+  );
 
   const dispatchWithSocket = useCallback(
     (action: Action) => {
       canvasDispatch(action);
       if (!send) return;
-
       switch (action.type) {
         case "ADD_SHAPE":
           send("ADD_SHAPE", action.payload);
@@ -168,17 +129,19 @@ export const useSocketWithWhiteboard = (): {
           break;
       }
     },
-    [send],
+    [send, inRoom],
   );
 
-  // 3.It generates cameraRef and selectedElementRef
+  // ── 1. interaction — produces selectedElementsRef, marqueeStateRef, cameraRef
   const {
+    selectedElementsRef,
+    marqueeStateRef,
     cameraRef,
     cancelText,
     finishText,
-    selectedElementRef,
-    setTextEdit,
     textEdit,
+    setTextEdit,
+    interactionState,
   } = useCanvasInteraction(
     canvasRef,
     inputRef,
@@ -190,32 +153,33 @@ export const useSocketWithWhiteboard = (): {
     inRoom,
     sideToolkitRef.current,
     sendActiveElementUpdate,
-    () => scheduleRenderRef.current(), //bridge here
+    () => scheduleRenderRef.current(), // stable bridge
     activeElementMap,
     staticDirtyRef,
   );
 
-  // 4. Now it has access to the refs it needs!
+  // ── 2. renderer — needs refs from interaction above
   const { scheduleRender } = useCanvasRenderer(
     canvasRef,
     canvasState,
-    selectedElementRef,
+    selectedElementsRef,
+    marqueeStateRef, // ← was missing
     cameraRef,
     memberCursor,
     activeElementMap,
     staticDirtyRef,
+    interactionState,
   );
 
-  // Bind the real scheduleRender to our Bridge Ref
+  // ── 3. wire actual scheduleRender into bridge ref
   scheduleRenderRef.current = scheduleRender;
 
-  // 5. Handles remote events with live data
+  // ── 4. socket message handler — always reads latest state via closure
   onMessageRef.current = (event: ServerSocketDataType) => {
     try {
       const handler = incomingSocketHandlers[event.type];
       if (!handler) return;
 
-      // If the event mutates state (by others aslo), dirty the static layer
       const staticMutatingEvents = [
         "ADD_SHAPE",
         "UPD_SHAPE",
@@ -226,6 +190,7 @@ export const useSocketWithWhiteboard = (): {
       if (staticMutatingEvents.includes(event.type)) {
         staticDirtyRef.current = true;
       }
+
       handler({
         canvasDispatch,
         event,
@@ -235,73 +200,37 @@ export const useSocketWithWhiteboard = (): {
         activeElementMap: activeElementMap.current,
         scheduleRender,
       });
-    } catch (error) {
-      console.error("Failed to parse WebSocket message:", error);
+    } catch (err) {
+      console.error("Failed to handle socket message:", err);
     }
   };
 
-  const clearCanvas = () => dispatchWithSocket({ type: "CLEAR_CANVAS" });
-
-  const handleJoinRoom = async (code: string) => {
-    try {
-      const data = await joinRoomService(code);
-      const roomUsers = data.users.map((user) => generateUserObject(user));
-      setRoomInfo({
-        ...roomInfo,
-        roomId: data.roomId,
-        slug: code,
-        users: roomUsers,
-      });
-      canvasDispatch({ type: "INITIALIZE_BOARD", payload: data.canvasState });
-      setToken(data.token);
-      connect(data.roomId, code, data.token);
-    } catch (error) {
-      console.error("error in join room : ", error);
-      throw new AppError("Error joining a ROOM,Try agian!", "SERVER_ERROR");
-    }
-  };
-
-  const handleCreateRoom = async () => {
-    try {
-      const res = await createRoomService();
-      if (!res) throw new Error("Error in ROOM creation.");
-      return await handleJoinRoom(res.slug);
-    } catch (error) {
-      throw new Error("Error in handle Room create");
-    }
-  };
-
-  const handleLeaveRoom = async () => {
-    try {
-      disconnect();
-      setRoomInfo({ ...roomInfo, roomId: "", slug: "" });
-      setToken("");
-    } catch (error) {
-      console.error("error in leave room");
-    }
-  };
-
-  const setTextState = (partial: Partial<TextStateType>) =>
-    canvasDispatch({ type: "UPD_TEXT_STATE", payload: partial });
-  const setEditorState = (partial: Partial<SideToolKitState>) =>
-    canvasDispatch({ type: "UPD_EDITOR", payload: partial });
-
-  const handleToolSelect = (toolName: AllToolTypes) => {
-    if (toolName === "color") return;
-    canvasDispatch({ type: "CHANGE_TOOL", payload: toolName });
-  };
+  // ── 5. shape property handlers
+  // all follow: update shape → dispatch → update ref → render
+  const updateSelectedShape = useCallback(
+    (updater: (shape: DrawElement) => DrawElement) => {
+      // applies to first selected shape (single select context)
+      const shape = selectedElementsRef.current[0];
+      if (!shape) return;
+      const updated = updater(shape);
+      dispatchWithSocket({ type: "UPD_SHAPE", payload: updated });
+      // replace first element in array, keep rest
+      selectedElementsRef.current = [
+        updated,
+        ...selectedElementsRef.current.slice(1),
+      ];
+      staticDirtyRef.current = true;
+      scheduleRenderRef.current();
+    },
+    [dispatchWithSocket],
+  );
 
   const handleColorSelect = (
     color: { l: number; c: number; h: number },
     shape?: ShapeType | LinearType | PencilType,
   ) => {
     if (shape) {
-      const newShape: ShapeType | LinearType | PencilType = {
-        ...shape,
-        strokeColor: color,
-      };
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      selectedElementRef.current = newShape;
+      updateSelectedShape((s) => ({ ...s, strokeColor: color }));
       return;
     }
     canvasDispatch({ type: "CHANGE_COLOR", payload: color });
@@ -312,124 +241,144 @@ export const useSocketWithWhiteboard = (): {
     shape?: ShapeType | LinearType | PencilType,
   ) => {
     if (shape) {
-      const newShape: ShapeType | LinearType | PencilType = {
-        ...shape,
-        strokeWidth: size,
-      };
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      selectedElementRef.current = newShape;
+      updateSelectedShape((s) => ({ ...s, strokeWidth: size }));
       return;
     }
     canvasDispatch({ type: "CHANGE_BRUSHSIZE", payload: size });
   };
 
   const handleFillSelect = (color?: ColorType, shape?: ShapeType) => {
-    if (shape) {
-      const newShape: ShapeType = { ...shape, fillColor: color };
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      selectedElementRef.current = newShape;
-      return;
-    }
+    if (shape) updateSelectedShape((s) => ({ ...s, fillColor: color }));
   };
 
   const handleStrokeStyle = (
     style: "dash" | "dotted" | "normal",
     element?: ShapeType | LinearType | PencilType,
   ) => {
-    if (element) {
-      const newShape: ShapeType | LinearType | PencilType = {
-        ...element,
-        strokeType: style,
-      };
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      selectedElementRef.current = newShape;
-      return;
-    }
+    if (element) updateSelectedShape((s) => ({ ...s, strokeType: style }));
   };
 
   const handleElementDelete = (element: DrawElement) => {
-    if (element) {
-      const newElement: DrawElement = { ...element, isDeleted: true };
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newElement });
-      selectedElementRef.current = newElement;
-      return;
-    }
+    dispatchWithSocket({ type: "BULK_DEL_SHAPE", payload: [element.id] });
+    selectedElementsRef.current = selectedElementsRef.current.filter(
+      (s) => s.id !== element.id,
+    );
+    staticDirtyRef.current = true;
+    scheduleRenderRef.current();
   };
 
-  const handleFontSelect = (font: FontTypes, shape?: ShapeType | TextType) => {
-    if (shape) {
-      let newShape: ShapeType | TextType;
-      if (shape.type === "text") {
-        newShape = { ...shape, fontFamily: font };
-      } else {
-        if (!shape.label) return;
-        newShape = { ...shape, label: { ...shape.label, fontFamily: font } };
-      }
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newShape });
-      selectedElementRef.current = newShape;
-      return;
-    }
+  const handleFontSelect = (font: FontTypes, shape: ShapeType | TextType) => {
+    const updated =
+      shape.type === "text"
+        ? { ...shape, fontFamily: font }
+        : shape.label
+          ? { ...shape, label: { ...shape.label, fontFamily: font } }
+          : shape;
+    dispatchWithSocket({ type: "UPD_SHAPE", payload: updated });
+    selectedElementsRef.current = [
+      updated,
+      ...selectedElementsRef.current.slice(1),
+    ];
+    staticDirtyRef.current = true;
+    scheduleRenderRef.current();
   };
 
   const handleFontSize = (size: number, shape?: TextType) => {
-    if (shape) {
-      const newText: TextType = { ...shape, fontSize: size };
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: newText });
-      selectedElementRef.current = newText;
-      return;
-    }
+    if (shape) updateSelectedShape((s) => ({ ...s, fontSize: size }));
   };
 
   const handleFontFamily = (font: AllowedFonts, shape?: TextType) => {
-    if (shape) {
-      const newText: TextType = { ...shape, fontFamily: font };
-      canvasDispatch({ type: "UPD_SHAPE", payload: newText });
-      selectedElementRef.current = newText;
-      return;
+    if (shape) updateSelectedShape((s) => ({ ...s, fontFamily: font }));
+  };
+
+  const handleToolSelect = (toolName: AllToolTypes) => {
+    if (toolName === "color") return;
+    canvasDispatch({ type: "CHANGE_TOOL", payload: toolName });
+  };
+
+  const clearCanvas = () => dispatchWithSocket({ type: "CLEAR_CANVAS" });
+
+  const handleJoinRoom = async (code: string) => {
+    try {
+      const data = await joinRoomService(code);
+      setRoomInfo({
+        ...roomInfo,
+        roomId: data.roomId,
+        slug: code,
+        users: data.users.map(generateUserObject),
+      });
+      canvasDispatch({ type: "INITIALIZE_BOARD", payload: data.canvasState });
+      setToken(data.token);
+      connect(data.roomId, code, data.token);
+      sessionStorage.setItem("activeRoom", code);
+    } catch (err) {
+      console.error("error in join room:", err);
+      throw new AppError("Error joining a ROOM, try again!", "SERVER_ERROR");
     }
   };
 
-  const handleRedo = () => canvasDispatch({ type: "REDO" });
-  const handleUndo = () => canvasDispatch({ type: "UNDO" });
+  const handleCreateRoom = async () => {
+    const res = await createRoomService();
+    if (!res) throw new Error("Error in ROOM creation.");
+    return handleJoinRoom(res.slug);
+  };
+
+  const handleLeaveRoom = async () => {
+    disconnect();
+    setRoomInfo({ ...roomInfo, roomId: "", slug: "" });
+    setToken("");
+    sessionStorage.removeItem("activeRoom");
+  };
+
+  // rejoin on refresh
+  useEffect(() => {
+    const lastRoom = sessionStorage.getItem("activeRoom");
+    if (lastRoom) handleJoinRoom(lastRoom);
+  }, []);
+
+  const setTextState = (p: Partial<TextStateType>) =>
+    canvasDispatch({ type: "UPD_TEXT_STATE", payload: p });
+  const setEditorState = (p: Partial<SideToolKitState>) =>
+    canvasDispatch({ type: "UPD_EDITOR", payload: p });
 
   return {
     canvasRef,
     inputRef,
     textAreaRef,
+    sideToolkitRef,
     canvasState,
-    selectedElementRef,
     canvasDispatch,
     dispatchWithSocket,
-    handleToolSelect,
-    handleColorSelect,
-    handleStrokeSelect,
-    handleRedo,
-    handleUndo,
-    messages,
-    setMessages,
-    send,
+    selectedElementsRef,
     cameraRef,
     textEdit,
     setTextEdit,
     finishText,
     cancelText,
+    messages,
+    setMessages,
+    send,
     inRoom,
     isOpen,
     setIsOpen,
-    handleLeaveRoom,
     handleJoinRoom,
     handleCreateRoom,
-    sideToolkitRef,
-    handleElementDelete,
-    handleStrokeStyle,
+    handleLeaveRoom,
+    handleToolSelect,
+    handleColorSelect,
+    handleStrokeSelect,
     handleFillSelect,
-    setEditorState,
+    handleStrokeStyle,
+    handleElementDelete,
     handleFontSelect,
-    setTextState,
     handleFontSize,
     handleFontFamily,
+    handleRedo: () => canvasDispatch({ type: "REDO" }),
+    handleUndo: () => canvasDispatch({ type: "UNDO" }),
+    clearCanvas,
+    setEditorState,
+    setTextState,
     slug: roomInfo.slug,
     users: roomInfo.users,
-    clearCanvas,
   };
 };

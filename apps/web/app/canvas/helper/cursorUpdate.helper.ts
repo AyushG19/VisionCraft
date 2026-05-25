@@ -1,7 +1,9 @@
 import { AllToolTypes, DrawElement } from "@repo/common";
 import {
   getBoundsForHandles,
+  getGroupOutlineBounds,
   getOutlineBounds,
+  ShapeBounds,
 } from "../utils/getBoundsHelpers";
 import { HandleName } from "../../lib/getHandles";
 import {
@@ -20,14 +22,13 @@ export const updateCursor = (
   canvas: HTMLCanvasElement,
   tool: AllToolTypes,
   worldPos: { x: number; y: number },
-  selectedElementRef: React.RefObject<DrawElement | undefined>,
+  selectedElementsRef: React.RefObject<DrawElement[]>, // ← array
   allShapes: DrawElement[],
   isPanning: boolean,
   spaceHeld: boolean,
   isDragging: boolean,
   isResizing: boolean,
 ) => {
-  const selectedElement = selectedElementRef.current;
   if (!canvas) return;
 
   if (isPanning) {
@@ -38,74 +39,93 @@ export const updateCursor = (
     canvas.style.cursor = "grab";
     return;
   }
-
-  // During drag/resize, keep the appropriate cursor
   if (isDragging) {
     canvas.style.cursor = "move";
     return;
   }
-  if (isResizing) {
-    // Cursor already set by handle detection, keep it
-    return;
-  }
+  if (isResizing) return; // cursor already set by handle detection
 
   if (tool === "select") {
-    // Check selected shape first (higher priority)
-    if (selectedElement && !selectedElement.isDeleted) {
-      const outlineBounds = getOutlineBounds(selectedElement);
-      const handleBounds = getBoundsForHandles(selectedElement);
+    const selected = selectedElementsRef.current;
 
-      // Check resize handles
-      const hoveredHandle: HandleName | null = isPointInHandle(
-        worldPos.x,
-        worldPos.y,
-        handleBounds,
-        undefined,
-        selectedElement,
-      );
+    if (selected.length === 1) {
+      const shape = selected[0]!;
+      if (!shape.isDeleted) {
+        const handleBounds = getBoundsForHandles(shape);
 
-      if (hoveredHandle) {
-        canvas.style.cursor = HANDLE_CURSORS[hoveredHandle];
-        return;
+        // check resize handles — only available on single select
+        if (handleBounds) {
+          if (handleBounds.type === "rect") {
+            const hoveredHandle: HandleName | null = isPointInHandle(
+              worldPos.x,
+              worldPos.y,
+              handleBounds,
+              undefined,
+            );
+            if (hoveredHandle) {
+              canvas.style.cursor = HANDLE_CURSORS[hoveredHandle];
+              return;
+            }
+          } else {
+            // point handles (line/arrow/pencil) — endpoint dots
+            // no resize cursor, just move when hovering near endpoints
+            for (const point of handleBounds.points) {
+              const dist = Math.hypot(
+                worldPos.x - point.x,
+                worldPos.y - point.y,
+              );
+              if (dist < 8) {
+                canvas.style.cursor = "crosshair";
+                return;
+              }
+            }
+          }
+        }
+
+        // check shape body
+        const outlineBounds = getOutlineBounds(shape);
+        if (outlineBounds && isInsideSelectBound(worldPos, outlineBounds)) {
+          canvas.style.cursor = "move";
+          return;
+        }
       }
+    }
 
-      // Check selected shape body
-      if (isInsideSelectBound(worldPos, outlineBounds)) {
+    if (selected.length > 1) {
+      // multi select — check group bounding box body only
+      // handles not shown for multi select
+      const groupBounds = getGroupOutlineBounds(selected);
+      if (groupBounds && isInsideSelectBound(worldPos, groupBounds)) {
         canvas.style.cursor = "move";
         return;
       }
     }
 
-    // Check other shapes
-    const hoveredShape = allShapes.find((shape: DrawElement) =>
-      isClickOnShape(worldPos, shape),
+    // not hovering over selection — check all shapes
+    const hoveredShape = allShapes.find(
+      (s) => !s.isDeleted && isClickOnShape(worldPos, s),
     );
     if (hoveredShape) {
       canvas.style.cursor = "move";
       return;
     }
 
-    // Nothing hovered
     canvas.style.cursor = `${getCursorSvg()} 20 3, auto`;
     return;
   }
 
-  // Drawing tool cursors
   if (CROSSHAIR_TOOLS.includes(tool)) {
     canvas.style.cursor = "crosshair";
     return;
   }
-
   if (tool === "eraser") {
     canvas.style.cursor = `${getEraserSvg()} 5 20, auto`;
     return;
   }
-
   if (tool === "pencil") {
     canvas.style.cursor = `${getPencilSvg()} 0 24, auto`;
     return;
   }
-
   if (tool === "text") {
     canvas.style.cursor = "text";
     return;

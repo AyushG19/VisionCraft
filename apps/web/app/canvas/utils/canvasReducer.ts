@@ -46,11 +46,13 @@ export default function canvasReducer(
     };
   }
   if (action.type === "DEL_SHAPE") {
+    const newElemensArr = state.drawnShapes.filter(
+      (e) => !action.payload.includes(e.id),
+    );
     return {
       ...state,
-      drawnShapes: state.drawnShapes.filter(
-        (shape) => shape.id !== action.payload,
-      ),
+      drawnShapes: newElemensArr,
+      ...pushHistory(newElemensArr),
     };
   }
   if (action.type === "UPD_SHAPE") {

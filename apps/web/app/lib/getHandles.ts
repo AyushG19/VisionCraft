@@ -7,7 +7,8 @@ export type HandleName =
   | "TOP_LEFT"
   | "TOP_RIGHT"
   | "BOTTOM_LEFT"
-  | "BOTTOM_RIGHT";
+  | "BOTTOM_RIGHT"
+  | "POINT";
 
 export interface Handle {
   name: HandleName;
@@ -19,7 +20,7 @@ export interface Handle {
 // Helper to compute handles once
 export const getHandles = (
   bounds: Bounds,
-  handleSize: number = 6
+  handleSize: number = 6,
 ): Handle[] => {
   const { x, y, width, height } = bounds;
   const left = Math.min(x, x + width);

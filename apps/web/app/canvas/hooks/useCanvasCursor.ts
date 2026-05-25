@@ -25,6 +25,7 @@ const HANDLE_CURSORS: Record<HandleName, string> = {
   TOP_RIGHT: "ne-resize",
   BOTTOM_LEFT: "sw-resize",
   BOTTOM_RIGHT: "se-resize",
+  POINT: "crosshair",
 };
 
 const CROSSHAIR_TOOLS = ["arrow", "rectangle", "ellipse", "diamond", "line"];
@@ -71,14 +72,13 @@ const useCanvasCursor = (
         if (selectedElement && !selectedElement.isDeleted) {
           const outlineBounds = getOutlineBounds(selectedElement);
           const handleBounds = getBoundsForHandles(selectedElement);
-
           // Check resize handles
+          if (!handleBounds) return;
           const hoveredHandle: HandleName | null = isPointInHandle(
             worldPos.x,
             worldPos.y,
             handleBounds,
             undefined,
-            selectedElement,
           );
 
           if (hoveredHandle) {
@@ -87,6 +87,7 @@ const useCanvasCursor = (
           }
 
           // Check selected shape body
+          if (!outlineBounds) return;
           if (isInsideSelectBound(worldPos, outlineBounds)) {
             canvas.style.cursor = "move";
             return;

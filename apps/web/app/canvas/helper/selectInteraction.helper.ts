@@ -7,14 +7,24 @@ import {
 } from "../utils/isPointInShape";
 import {
   getBoundsForHandles,
+  getGroupOutlineBounds,
   getOutlineBounds,
 } from "../utils/getBoundsHelpers";
 import { CanvasState, ActiveElementMapType } from "../types";
 import {
-  createDragedElement,
+  createDraggedGroup,
   createResizedElement,
 } from "../utils/createTempShapeHelper";
 import useInteractionState from "../hooks/useInteractionState";
+
+export type MarqueeState = {
+  isActive: boolean;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+};
+
 export const createSelectInteraction = (
   interactionState: ReturnType<typeof useInteractionState>,
 ) => {
@@ -27,130 +37,208 @@ export const createSelectInteraction = (
     resetDragAndResize,
   } = interactionState;
 
+  // marquee state lives here — pure interaction concern
+  const marqueeRef = { current: null as MarqueeState | null };
+
   const handleSelectMouseDown = (
     worldPos: { x: number; y: number },
     canvasState: CanvasState,
-    selectedElementRef: React.RefObject<DrawElement | undefined>,
+    currSelected: DrawElement[],
     activeElementMapRef: React.RefObject<ActiveElementMapType>,
-  ): DrawElement | undefined => {
-    if (selectedElementRef.current) {
-      const outlineBounds = getOutlineBounds(selectedElementRef.current);
-      if (outlineBounds && isInsideSelectBound(worldPos, outlineBounds)) {
-        startDrag(selectedElementRef.current, worldPos, {
-          x: selectedElementRef.current.startX,
-          y: selectedElementRef.current.startY,
-        });
-        return selectedElementRef.current;
+    isShiftHeld: boolean,
+  ): DrawElement[] => {
+    // Case 1: check handles first — only single select has handles
+    if (currSelected.length === 1 && !isShiftHeld) {
+      const handleBounds = getBoundsForHandles(currSelected[0]!);
+      if (handleBounds?.type === "rect") {
+        const hitHandle = isPointInHandle(
+          worldPos.x,
+          worldPos.y,
+          handleBounds,
+          undefined,
+        );
+        if (hitHandle) {
+          startResize(hitHandle, currSelected[0]!);
+          return currSelected;
+        }
       }
-
-      const hitHandle = isPointInHandle(
-        worldPos.x,
-        worldPos.y,
-        getBoundsForHandles(selectedElementRef.current)!,
-        undefined,
-        selectedElementRef.current,
-      );
-      if (hitHandle) {
-        startResize(hitHandle, selectedElementRef.current);
-        return selectedElementRef.current;
-      }
-      return undefined;
     }
 
+    // Case 2: check if hit the body of current selection
+    // but ONLY when not shift-held — shift always goes to find new shape
+    if (currSelected.length > 0 && !isShiftHeld) {
+      const groupBounds = getGroupOutlineBounds(currSelected);
+      if (groupBounds && isInsideSelectBound(worldPos, groupBounds)) {
+        startDrag(currSelected, worldPos);
+        return currSelected;
+      }
+    }
+
+    // Case 3: find a shape under the cursor
     const clicked = [...canvasState.drawnShapes]
       .reverse()
       .find((s) => !s.isDeleted && isClickOnShape(worldPos, s));
 
-    if (!clicked) return undefined;
+    // Case 4: shift+click on a shape — toggle it in/out of selection
+    if (clicked && isShiftHeld) {
+      const isLockedByOther = [...activeElementMapRef.current.values()].some(
+        (e) => e.element.id === clicked.id,
+      );
+      if (isLockedByOther) return currSelected;
 
-    const isLockedByOther = [...activeElementMapRef.current.values()].some(
-      (entry) => entry.element.id === clicked.id,
-    );
+      const alreadySelected = currSelected.some((s) => s.id === clicked.id);
+      if (alreadySelected) {
+        // deselect just this one
+        const next = currSelected.filter((s) => s.id !== clicked.id);
+        if (next.length > 0) startDrag(next, worldPos);
+        return next;
+      }
+      // add to selection
+      const next = [...currSelected, clicked];
+      startDrag(next, worldPos);
+      return next;
+    }
 
-    if (isLockedByOther) return undefined;
+    // Case 5: plain click on a shape — select only this one
+    if (clicked) {
+      const isLockedByOther = [...activeElementMapRef.current.values()].some(
+        (e) => e.element.id === clicked.id,
+      );
+      if (isLockedByOther) return isShiftHeld ? currSelected : [];
 
-    startDrag(clicked, worldPos, { x: clicked.startX, y: clicked.startY });
-    return clicked;
+      startDrag([clicked], worldPos);
+      return [clicked];
+    }
+
+    // Case 6: clicked empty space — start marquee
+    marqueeRef.current = {
+      isActive: true,
+      startX: worldPos.x,
+      startY: worldPos.y,
+      endX: worldPos.x,
+      endY: worldPos.y,
+    };
+
+    // shift+click empty = keep existing selection and add to it via marquee
+    // plain click empty = clear selection, start fresh marquee
+    return isShiftHeld ? currSelected : [];
   };
 
   const handleSelectMouseMove = (
     worldPos: { x: number; y: number },
-    currSelected: DrawElement | undefined,
-  ): DrawElement | undefined => {
-    if (!currSelected) return;
+    currSelected: DrawElement[],
+    canvasState: CanvasState, // needed for marquee hit testing
+    isShiftHeld: boolean,
+  ): { shapes: DrawElement[]; marquee: MarqueeState | null } | null => {
+    // marquee in progress
+    if (marqueeRef.current?.isActive) {
+      marqueeRef.current = {
+        ...marqueeRef.current,
+        endX: worldPos.x,
+        endY: worldPos.y,
+      };
+
+      const { startX, startY, endX, endY } = marqueeRef.current;
+      const minX = Math.min(startX, endX);
+      const maxX = Math.max(startX, endX);
+      const minY = Math.min(startY, endY);
+      const maxY = Math.max(startY, endY);
+
+      // select all shapes whose bounding box intersects the marquee
+      const inMarquee = canvasState.drawnShapes.filter((s) => {
+        if (s.isDeleted) return false;
+        const b = getOutlineBounds(s); // see helper below
+        if (!b) return null;
+        return (
+          b.x <= maxX &&
+          b.x + b.width >= minX &&
+          b.y <= maxY &&
+          b.y + b.height >= minY
+        );
+      });
+
+      // shift marquee adds to existing, plain marquee replaces
+      const next = isShiftHeld
+        ? [
+            ...new Map(
+              [...currSelected, ...inMarquee].map((s) => [s.id, s]),
+            ).values(),
+          ]
+        : inMarquee;
+
+      return { shapes: next, marquee: marqueeRef.current };
+    }
+
+    // normal drag/resize
+    if (currSelected.length === 0) return { shapes: [], marquee: null };
 
     if (interaction.current.isDragging) {
-      const preview = createDragedElement(
-        getDragState(),
-        worldPos,
-        currSelected,
-      );
-      // Object.assign(selectedElementRef.current, preview);
-      // sendActiveElementUpdate({
-      //   type: "DRAG",
-      //   payload: { ...selectedElementRef.current },
-      // });
-      return preview;
+      return {
+        shapes: createDraggedGroup(getDragState(), worldPos, currSelected),
+        marquee: null,
+      };
     }
 
     if (
+      currSelected.length === 1 &&
       interaction.current.isResizing &&
       interaction.current.resizeDirection !== null
     ) {
-      const preview = createResizedElement(
-        getResizeState(),
-        worldPos,
-        currSelected,
-      );
-      // Object.assign(selectedElementRef.current, preview);
-      // sendActiveElementUpdate({
-      //   type: "RESIZE",
-      //   payload: { ...selectedElementRef.current },
-      // });
-      return preview;
+      return {
+        shapes: [
+          createResizedElement(getResizeState(), worldPos, currSelected[0]!),
+        ],
+        marquee: null,
+      };
     }
 
-    return;
+    return null;
   };
 
   const handleSelectMouseUp = (
     worldPos: { x: number; y: number },
-    currSelected: DrawElement | undefined,
-  ): DrawElement | undefined => {
-    if (!currSelected) {
+    currSelected: DrawElement[],
+    canvasState: CanvasState,
+    isShiftHeld: boolean,
+  ): { shapes: DrawElement[]; didCommit: boolean } => {
+    // end marquee — selection is already up to date from mousemove
+    if (marqueeRef.current?.isActive) {
+      marqueeRef.current = null;
       resetDragAndResize();
-      return;
+      return { shapes: currSelected, didCommit: false };
+    }
+
+    if (currSelected.length === 0) {
+      resetDragAndResize();
+      return { shapes: [], didCommit: false };
     }
 
     if (interaction.current.isDragging) {
-      const final = createDragedElement(getDragState(), worldPos, currSelected);
-      // Object.assign(selectedElementRef.current, final);
-      // dispatchWithSocket({
-      //   type: "UPD_SHAPE",
-      //   payload: { ...selectedElementRef.current },
-      // });
+      const finals = createDraggedGroup(getDragState(), worldPos, currSelected);
       resetDragAndResize();
-      return final;
+      return { shapes: finals, didCommit: true };
     }
 
-    if (interaction.current.isResizing) {
+    if (currSelected.length === 1 && interaction.current.isResizing) {
       const final = createResizedElement(
         getResizeState(),
         worldPos,
-        currSelected,
+        currSelected[0]!,
       );
-      // Object.assign(selectedElementRef.current, final);
-      // dispatchWithSocket({
-      //   type: "UPD_SHAPE",
-      //   payload: { ...selectedElementRef.current },
-      // });
       resetDragAndResize();
-      return final;
+      return { shapes: [final], didCommit: true };
     }
 
     resetDragAndResize();
-    return;
+    return { shapes: currSelected, didCommit: false };
   };
 
-  return { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp };
+  const getMarquee = () => marqueeRef.current;
+
+  return {
+    handleSelectMouseDown,
+    handleSelectMouseMove,
+    handleSelectMouseUp,
+    getMarquee,
+  };
 };

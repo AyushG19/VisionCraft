@@ -37,21 +37,66 @@ export const createDragedElement = (
   }
 
   if (shape.type === "arrow" || shape.type === "line") {
-    const dx = shape.points[2]!.x - shape.startX;
-    const dy = shape.points[2]!.y - shape.startY;
+    const dx = newX - shape.startX;
+    const dy = newY - shape.startY;
+
     return {
       ...shape,
       startX: newX,
       startY: newY,
-      points: shape.points.map((p, i) =>
-        i === 2 ? { x: newX + dx, y: newY + dy } : p,
-      ),
     };
   }
 
   return shape;
 };
-// const dx = shape.endX - shape.startX;
+
+export const createDraggedGroup = (
+  dragState: DragStateType,
+  currMousePos: { x: number; y: number },
+  shapes: DrawElement[],
+): DrawElement[] => {
+  return shapes.map((shape) => {
+    const offset = dragState.groupDragOffsets.find((o) => o.id === shape.id);
+    if (!offset) return shape;
+
+    const newX = currMousePos.x - offset.dx;
+    const newY = currMousePos.y - offset.dy;
+
+    if (
+      shape.type === "rectangle" ||
+      shape.type === "ellipse" ||
+      shape.type === "diamond" ||
+      shape.type === "pencil"
+    ) {
+      const w = shape.endX - shape.startX;
+      const h = shape.endY - shape.startY;
+      return {
+        ...shape,
+        startX: newX,
+        startY: newY,
+        endX: newX + w,
+        endY: newY + h,
+      };
+    }
+
+    if (shape.type === "text" || shape.type === "image") {
+      return { ...shape, startX: newX, startY: newY };
+    }
+
+    if (shape.type === "arrow" || shape.type === "line") {
+      const dx = shape.points[2]!.x - shape.startX;
+      const dy = shape.points[2]!.y - shape.startY;
+      return {
+        ...shape,
+        startX: newX,
+        startY: newY,
+        // points: shape.points.map((p, i) => ({ x: newX + dx, y: newY + dy })),
+      };
+    }
+
+    return shape;
+  });
+}; // const dx = shape.endX - shape.startX;
 // const dy = shape.endY - shape.startY;
 // const clampedX = Math.max(
 //   0,
@@ -106,7 +151,6 @@ export const createResizedElement = (
     return liveShape;
 
   const original = resizeState.originalShape; // snapshot for ALL branches
-
   if (liveShape.type === "image") {
     if (original.type !== "image") return liveShape;
     if (original.width === 0 || original.height === 0) return liveShape;

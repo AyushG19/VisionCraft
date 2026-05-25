@@ -2,30 +2,37 @@ import { useEffect, useRef, RefObject, useCallback } from "react";
 import { DrawElement } from "@repo/common";
 import { MemberCursor } from "@repo/hooks";
 import { Camera } from "./useCamera";
-import { ActiveElementMapType, CanvasState } from "../types";
-import { drawShape } from "../utils/drawing";
+import { ActiveElementMapType, CanvasState, InteractionState } from "../types";
+import { MarqueeState } from "../helper/selectInteraction.helper";
+import { drawShape, highlightShape } from "../utils/drawing";
 import { drawGrid } from "../../lib/drawGrid";
 import { getUserColor } from "../helper/color.helper";
 import { worldToScreen } from "../../lib/math";
+import { getGroupOutlineBounds } from "../utils/getBoundsHelpers";
+import { drawGroupBoundingBox } from "../utils/drawing";
 
 type Props = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   canvasStateRef: RefObject<CanvasState>;
-  selectedElementRef: RefObject<DrawElement | undefined>;
+  selectedElementsRef: RefObject<DrawElement[]>;
+  marqueeStateRef: RefObject<MarqueeState | null>; // ← add
   cameraRef: RefObject<Camera>;
   cursorMapRef: RefObject<MemberCursor>;
   activeElementMapRef: RefObject<ActiveElementMapType>;
   staticDirtyRef: RefObject<boolean>;
+  interactionState: React.RefObject<InteractionState>;
 };
 
 const useRafLoop = ({
   canvasRef,
   canvasStateRef,
-  selectedElementRef,
+  selectedElementsRef,
+  marqueeStateRef, // ← add
   cameraRef,
   cursorMapRef,
   activeElementMapRef,
   staticDirtyRef,
+  interactionState,
 }: Props) => {
   const offscreenRef = useRef<OffscreenCanvas | null>(null);
   const offscreenCtxRef = useRef<OffscreenCanvasRenderingContext2D | null>(
@@ -35,24 +42,46 @@ const useRafLoop = ({
   const isRenderPending = useRef(false);
   const frameIdRef = useRef<number>(0);
 
-  // scheduleRender is the single entry point for anything that needs a repaint.
-  // Multiple callers coalesce into one frame — if a frame is already queued,
-  // calling this again is a no-op.
-  const scheduleRender = useCallback(() => {
-    if (isRenderPending.current) return;
-    isRenderPending.current = true;
-    frameIdRef.current = requestAnimationFrame(renderLoop);
-  }, []);
+  // all the refs needed inside renderLoop — stable, never change
+  const propsRef = useRef({
+    canvasRef,
+    canvasStateRef,
+    selectedElementsRef,
+    marqueeStateRef,
+    cameraRef,
+    cursorMapRef,
+    activeElementMapRef,
+    staticDirtyRef,
+  });
 
-  useEffect(() => {
-    return () => {
-      cancelAnimationFrame(frameIdRef.current);
-      isRenderPending.current = false;
-    };
-  }, []);
+  // keep propsRef in sync every render
+  // so renderLoop always reads latest refs without needing useEffect
+  propsRef.current = {
+    canvasRef,
+    canvasStateRef,
+    selectedElementsRef,
+    marqueeStateRef,
+    cameraRef,
+    cursorMapRef,
+    activeElementMapRef,
+    staticDirtyRef,
+  };
 
-  const renderLoop = () => {
-    isRenderPending.current = false; // reset first so any write during draw can schedule next frame
+  // defined at module level — no useEffect, no closure issues
+  // reads everything through propsRef so it's always fresh
+  const renderLoop = useCallback(() => {
+    isRenderPending.current = false;
+
+    const {
+      canvasRef,
+      canvasStateRef,
+      selectedElementsRef,
+      marqueeStateRef,
+      cameraRef,
+      cursorMapRef,
+      activeElementMapRef,
+      staticDirtyRef,
+    } = propsRef.current;
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -63,7 +92,6 @@ const useRafLoop = ({
     const h = canvas.height;
     const cam = cameraRef.current!;
 
-    // recreate offscreen canvas on resize
     if (
       !offscreenRef.current ||
       offscreenRef.current.width !== w ||
@@ -74,10 +102,9 @@ const useRafLoop = ({
       staticDirtyRef.current = true;
     }
 
-    // static layer — only repaints when explicitly marked dirty
     if (staticDirtyRef.current) {
       const oc = offscreenCtxRef.current!;
-      const selected = selectedElementRef.current;
+      const selectedIds = new Set(selectedElementsRef.current.map((s) => s.id));
 
       oc.setTransform(1, 0, 0, 1, 0, 0);
       oc.clearRect(0, 0, w, h);
@@ -85,36 +112,54 @@ const useRafLoop = ({
       drawGrid(oc as any, cam, w / dpr, h / dpr);
 
       for (const shape of canvasStateRef.current!.drawnShapes) {
-        if (selected && shape.id === selected.id) continue;
-        if (activeElementMapRef.current.has(shape.id)) continue;
-        drawShape(oc as any, shape, cam, selected?.id);
+        if (selectedIds.has(shape.id)) continue;
+        if (activeElementMapRef.current!.has(shape.id)) continue;
+        drawShape(oc as any, shape, cam, false);
       }
 
       staticDirtyRef.current = false;
     }
 
-    // composite static layer — single drawImage call
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(offscreenRef.current!, 0, 0);
 
-    // dynamic layer — remote active elements
     ctx.setTransform(cam.z * dpr, 0, 0, cam.z * dpr, cam.x * dpr, cam.y * dpr);
+
     for (const [, { element, userId }] of activeElementMapRef.current!) {
-      drawShape(ctx, element, cam, element.id, getUserColor(userId));
+      drawShape(ctx, element, cam, false, element.id, getUserColor(userId));
     }
 
-    // dynamic layer — local selected/in-progress shape
-    if (selectedElementRef.current) {
-      drawShape(
+    for (const shape of selectedElementsRef.current) {
+      let shapeId = interactionState.current.isDrawing ? undefined : shape.id;
+      let multiselect = selectedElementsRef.current.length > 1 ? true : false;
+      drawShape(ctx, shape, cam, multiselect, shapeId);
+    }
+
+    if (
+      selectedElementsRef.current.length > 1 &&
+      !marqueeStateRef.current?.isActive
+    ) {
+      const bounds = getGroupOutlineBounds(selectedElementsRef.current);
+      if (bounds)
+        highlightShape(ctx, { ...bounds, type: "marquee" }, cam.z, "#43D9FF");
+    }
+
+    const marquee = marqueeStateRef.current;
+    if (marquee?.isActive) {
+      const x = Math.min(marquee.startX, marquee.endX);
+      const y = Math.min(marquee.startY, marquee.endY);
+      const mw = Math.abs(marquee.endX - marquee.startX);
+      const mh = Math.abs(marquee.endY - marquee.startY);
+
+      highlightShape(
         ctx,
-        selectedElementRef.current,
-        cam,
-        selectedElementRef.current.id,
+        { x, y, width: mw, height: mh, type: "marquee" },
+        cameraRef.current.z,
+        "#43D9FF",
       );
     }
 
-    // cursor DOM updates — no canvas API, just CSS transforms
     for (const [userId, cursor] of cursorMapRef.current!) {
       let el = cursorElCache.current.get(userId);
       if (!el) {
@@ -125,11 +170,22 @@ const useRafLoop = ({
       const pos = worldToScreen(cursor.x, cursor.y, cam);
       el.style.transform = `translate(${pos.x - 20}px, ${pos.y - 3}px)`;
     }
+  }, []); // stable — reads everything through propsRef
 
-    // loop does NOT reschedule itself — it sleeps until scheduleRender() is called
-  };
+  const scheduleRender = useCallback(() => {
+    if (isRenderPending.current) return;
+    isRenderPending.current = true;
+    frameIdRef.current = requestAnimationFrame(renderLoop);
+  }, [renderLoop]);
+
+  // cleanup only
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(frameIdRef.current);
+      isRenderPending.current = false;
+    };
+  }, []);
 
   return { scheduleRender };
 };
-
 export default useRafLoop;
