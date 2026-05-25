@@ -215,16 +215,6 @@ export const useSocketWithWhiteboard = (): {
       const handler = incomingSocketHandlers[event.type];
       if (!handler) return;
 
-      handler({
-        canvasDispatch,
-        event,
-        memberCursorMap: memberCursor.current,
-        setMessages,
-        setRoomInfo,
-        activeElementMap: activeElementMap.current,
-        scheduleRender,
-      });
-
       // If the event mutates state (by others aslo), dirty the static layer
       const staticMutatingEvents = [
         "ADD_SHAPE",
@@ -236,6 +226,15 @@ export const useSocketWithWhiteboard = (): {
       if (staticMutatingEvents.includes(event.type)) {
         staticDirtyRef.current = true;
       }
+      handler({
+        canvasDispatch,
+        event,
+        memberCursorMap: memberCursor.current,
+        setMessages,
+        setRoomInfo,
+        activeElementMap: activeElementMap.current,
+        scheduleRender,
+      });
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
     }

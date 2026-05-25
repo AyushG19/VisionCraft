@@ -215,26 +215,31 @@ const useCanvasInteraction = (
       );
       const currentState = canvasStateRef.current;
       const tool = currentState.toolState.currentTool;
+      const current = selectedElementRef.current;
 
       if (tool === "select") {
-        const newshape = selectInteraction.handleSelectMouseDown(
+        const clickedEle = selectInteraction.handleSelectMouseDown(
           pos,
           currentState,
           selectedElementRef,
           activeElementMapRef,
         );
-        if (selectedElementRef.current && newshape)
-          sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+        // if currently selected shape,and no new shape,make if shape selected flase remove active element from socket for others too
+        if (current?.id === clickedEle?.id) {
+          return;
+        }
 
-        if (!newshape) {
+        if (current) {
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
           selectedElementRef.current = undefined;
-        } else {
-          sendActiveElementUpdate({ type: "DRAG", payload: newshape });
-          selectedElementRef.current = newshape;
         }
+
+        if (clickedEle) {
+          sendActiveElementUpdate({ type: "DRAG", payload: clickedEle });
+          selectedElementRef.current = clickedEle;
+        }
+        // scheduleRender();
         markStaticDirty();
-        scheduleRender();
       } else if (tool === "text") {
         e.preventDefault();
         textAreaRef.current?.blur();
@@ -252,6 +257,10 @@ const useCanvasInteraction = (
       } else if (tool === "eraser") {
         interactionState.eraseStateRef.current.isErasing = true;
       } else {
+        if (selectedElementRef.current) {
+          selectedElementRef.current = undefined;
+          markStaticDirty();
+        }
         const preview = drawInteraction.handleDrawMouseDown(
           pos,
           currentState.toolState,
@@ -369,6 +378,7 @@ const useCanvasInteraction = (
           if (preview) {
             selectedElementRef.current = preview;
             dispatchWithSocket({ type: "UPD_SHAPE", payload: preview });
+            markStaticDirty();
             scheduleRender();
           }
           break;

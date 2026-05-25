@@ -9,7 +9,7 @@ export type ShapeTool = z.infer<typeof ShapeToolSchema>;
 export const LineToolSchema = z.enum(["arrow", "line"]);
 export type LineTool = z.infer<typeof LineToolSchema>;
 
-export const PencilToolSchema = z.literal(["pencil"]);
+export const PencilToolSchema = z.literal("pencil");
 export type PencilToolType = z.infer<typeof PencilToolSchema>;
 
 export const ActionToolSchema = z.enum(["text", "image", "color"]);
@@ -94,7 +94,7 @@ export type PointType = z.infer<typeof PointSchema>;
 
 export const LinearElementSchema = BaseElementSchema.extend({
   type: LineToolSchema,
-  points: z.array(PointSchema).readonly(),
+  points: z.array(PointSchema),
   startBinding: z.any().optional(),
   endBinding: z.any().optional(),
   strokeType: z.enum(["dash", "dotted", "normal"]),

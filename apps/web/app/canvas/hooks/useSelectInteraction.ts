@@ -98,7 +98,6 @@ const useSelectInteraction = (
           startResize(hitHandle, selectedElementRef.current);
           return selectedElementRef.current;
         }
-        return undefined;
       }
 
       //  Case 2: Click on different shape
