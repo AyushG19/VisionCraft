@@ -2,13 +2,20 @@
   "name": "@repo/redis",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsup src/index.ts --dts --format esm,cjs",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "tsup": "^8.5.1"
   },
   "keywords": [],
   "author": "",

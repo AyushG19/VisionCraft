@@ -15,7 +15,8 @@
   },
   "devDependencies": {
     "@repo/common": "workspace:*",
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "tsup": "^8.5.1"
   },
   "keywords": [],
   "author": "",
