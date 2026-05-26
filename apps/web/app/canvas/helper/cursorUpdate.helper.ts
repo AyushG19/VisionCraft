@@ -66,7 +66,7 @@ export const updateCursor = (
               canvas.style.cursor = HANDLE_CURSORS[hoveredHandle];
               return;
             }
-          } else {
+          } else if (handleBounds.type === "points") {
             // point handles (line/arrow/pencil) — endpoint dots
             // no resize cursor, just move when hovering near endpoints
             for (const point of handleBounds.points) {

@@ -14,15 +14,16 @@ import { WebSocket } from "ws";
  * Required - To circulate in pub/sub so we can skip users if needed
  */
 export type RedisData =
+  | { userId: string; type: "ADD"; element: DrawElement }
   | {
       userId: string;
-      type: "ADD" | "UPD";
-      element: DrawElement;
+      type: "UPD";
+      elements: DrawElement[];
     }
   | {
       userId: string;
       type: "DEL";
-      element: string;
+      elementIds: string[];
     }
   | { type: "BULK_DEL"; userId: string; elementIds: string[] }
   | {
@@ -34,7 +35,7 @@ export type RedisData =
   | { type: "LEAVE"; userId: string; time: number }
   | { type: "JOIN"; userId: string; time: number }
   | { type: "RESIZE"; userId: string; element: DrawElement }
-  | { type: "DRAG"; userId: string; element: DrawElement }
+  | { type: "DRAG"; userId: string; elements: DrawElement[] }
   | { type: "DESELECT"; userId: string }
   | { type: "CLEAR_CANVAS"; userId: string };
 

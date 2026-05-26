@@ -1,20 +1,29 @@
 import { UserInfo } from "@repo/hooks";
 import { IconLocationFilled } from "@tabler/icons-react";
 
-const UsersCursor = ({ color, userId }: UserInfo) => {
+const UsersCursor = ({ name, color, userId }: UserInfo) => {
   return (
-    <IconLocationFilled
+    <div
+      className="flex"
       id={`cursor:${userId}`}
-      color={color}
-      stroke={1}
       style={{
         position: "absolute",
-        top: `0px`,
-        left: `0px`,
+        top: "0px",
+        left: "0px",
         rotate: "revert",
         pointerEvents: "none",
+        color: color,
       }}
-    />
+    >
+      <span
+        className={`truncate max-w-20 text-black px-2 py-0.5 text-sm rounded-full mt-4 -mr-1 font-handlee`}
+        style={{ backgroundColor: color }}
+      >
+        {name}
+      </span>
+
+      <IconLocationFilled color={"black"} fill="currentColor" stroke={1} />
+    </div>
   );
 };
 

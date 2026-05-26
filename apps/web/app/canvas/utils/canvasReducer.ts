@@ -57,11 +57,13 @@ export default function canvasReducer(
   }
   if (action.type === "UPD_SHAPE") {
     const newCanvasState = state.drawnShapes.map((s) => {
-      if (s.id === action.payload.id)
-        return {
-          ...action.payload,
-          id: s.id,
-        };
+      for (const ele of action.payload) {
+        if (s.id === ele.id)
+          return {
+            ...ele,
+            id: s.id,
+          };
+      }
       return s;
     });
     return {

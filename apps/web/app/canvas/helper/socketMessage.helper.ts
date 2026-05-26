@@ -51,11 +51,8 @@ export const incomingSocketHandlers: Record<
 
   DEL_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
     if (event.type !== "DEL_SHAPE") return;
-    const shape = event.payload;
-    if (shape) {
-      canvasDispatch({ type: "DEL_SHAPE", payload: shape });
-      scheduleRender();
-    }
+    canvasDispatch({ type: "DEL_SHAPE", payload: event.payload });
+    scheduleRender();
   },
 
   BULK_DEL_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
@@ -110,11 +107,13 @@ export const incomingSocketHandlers: Record<
 
   DRAG: async ({ event, activeElementMap, scheduleRender }) => {
     if (event.type !== "DRAG") return;
-    const { userId, element } = event.payload;
-    activeElementMap.set(element.id, {
-      element: element,
-      isDirty: true,
-      userId,
+    const { userId, elements } = event.payload;
+    elements.forEach((e) => {
+      activeElementMap.set(e.id, {
+        element: e,
+        isDirty: true,
+        userId,
+      });
     });
     scheduleRender();
   },
@@ -123,7 +122,6 @@ export const incomingSocketHandlers: Record<
     if (event.type !== "DESELECT") return;
     for (const [key, val] of activeElementMap.entries()) {
       if (val.userId === event.payload.userId) activeElementMap.delete(key);
-      break;
     }
     scheduleRender();
   },

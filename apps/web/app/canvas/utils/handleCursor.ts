@@ -9,6 +9,7 @@ export const HANDLE_CURSORS: Record<HandleName, string> = {
   TOP_RIGHT: "ne-resize",
   BOTTOM_LEFT: "sw-resize",
   BOTTOM_RIGHT: "se-resize",
+  POINT: "crosshair",
 };
 
 export const CROSSHAIR_TOOLS = [

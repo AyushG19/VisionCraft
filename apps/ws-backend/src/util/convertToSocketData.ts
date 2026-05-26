@@ -11,12 +11,12 @@ export function convertToSocketData(data: RedisData): ServerSocketDataType {
     case "DEL":
       return {
         type: "DEL_SHAPE",
-        payload: data.element,
+        payload: data.elementIds,
       };
     case "UPD":
       return {
         type: "UPD_SHAPE",
-        payload: data.element,
+        payload: data.elements,
       };
     case "CHAT":
       return {
@@ -44,7 +44,7 @@ export function convertToSocketData(data: RedisData): ServerSocketDataType {
     case "DRAG": {
       return {
         type: "DRAG",
-        payload: { userId: data.userId, element: data.element },
+        payload: { userId: data.userId, elements: data.elements },
       };
     }
     case "DESELECT": {

@@ -17,7 +17,7 @@ export class ElementService {
 
     await Promise.all([
       this.queue.add(
-        ELEMENT_JOBS.UPSERT,
+        ELEMENT_JOBS.CREATE,
         { roomId, element: event.element },
         { jobId: `element-${Date.now()}` },
       ),
@@ -31,8 +31,8 @@ export class ElementService {
     await Promise.all([
       this.queue.add(
         ELEMENT_JOBS.UPSERT,
-        { roomId, element: event.element },
-        { jobId: `element-${event.element.id}`, delay: 300 },
+        { roomId, elements: event.elements },
+        { jobId: `element-${Date.now()}`, delay: 300 },
       ),
       this.pub.publish(`room:${roomId}:events`, JSON.stringify(event)),
     ]);
@@ -44,7 +44,7 @@ export class ElementService {
         ELEMENT_JOBS.DELETE,
         {
           roomId,
-          elementId: event.element,
+          elementId: event.elementIds,
         },
         { jobId: `element-${Date.now()}` },
       ),

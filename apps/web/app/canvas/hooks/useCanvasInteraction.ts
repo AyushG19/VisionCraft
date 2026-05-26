@@ -17,7 +17,6 @@ import {
   TextEditState,
 } from "../types";
 import resizeCanvas from "../utils/canvasResizeHelper";
-import { imageCache } from "../utils/redrawPreviousShapes";
 import useInteractionState from "./useInteractionState";
 import { getMousePos, getMousePosOnWorld } from "../helper/coordinate.helper";
 import { Camera, useCamera } from "./useCamera";
@@ -33,6 +32,7 @@ import {
   MarqueeState,
 } from "../helper/selectInteraction.helper";
 import createDrawInteraction from "../helper/drawingInteraction.helper";
+import { setImage } from "../utils/imageCache";
 
 const useCanvasInteraction = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -229,7 +229,10 @@ const useCanvasInteraction = (
         if (next.length === 0 && prev.length > 0) {
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
         } else if (next.length > 0) {
-          sendActiveElementUpdate({ type: "DRAG", payload: next[0]! });
+          // if (!e.shiftKey)
+          //   sendActiveElementUpdate({ type: "DRAG", payload: next });
+          sendActiveElementUpdate({ type: "DRAG", payload: next });
+          dispatchWithSocket({ type: "UPD_SHAPE", payload: next });
         }
 
         markStaticDirty();
@@ -306,11 +309,12 @@ const useCanvasInteraction = (
           if (
             result.marquee === null &&
             result.shapes[0] &&
-            interactionState.interaction.current.isDragging
+            (interactionState.interaction.current.isDragging ||
+              interactionState.interaction.current.isResizing)
           ) {
             sendActiveElementUpdate({
               type: "DRAG",
-              payload: result.shapes[0],
+              payload: result.shapes,
             });
           }
 
@@ -345,7 +349,7 @@ const useCanvasInteraction = (
           console.log("Eraser next");
           canvasDispatch({
             type: "UPD_SHAPE",
-            payload: { ...clicked, opacity: 0.2 },
+            payload: [{ ...clicked, opacity: 0.2 }],
           });
           markStaticDirty();
           scheduleRender();
@@ -371,7 +375,7 @@ const useCanvasInteraction = (
             selectedElementsRef.current = [{ ...preview, id: current.id }];
             sendActiveElementUpdate({
               type: "DRAG",
-              payload: selectedElementsRef.current[0]!,
+              payload: selectedElementsRef.current,
             });
             scheduleRender();
           }
@@ -415,10 +419,8 @@ const useCanvasInteraction = (
           marqueeStateRef.current = null; // always clear marquee on mouseup
 
           if (result.didCommit) {
-            result.shapes.forEach((shape) => {
-              dispatchWithSocket({ type: "UPD_SHAPE", payload: shape });
-            });
-            sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+            dispatchWithSocket({ type: "UPD_SHAPE", payload: result.shapes });
+            // sendActiveElementUpdate({ type: "DESELECT", payload: {} });
           }
 
           markStaticDirty();
@@ -495,13 +497,13 @@ const useCanvasInteraction = (
           canvasState.toolState.strokeSize,
         );
         await set(newImage.id, compressedBlob);
-        imageCache.set(newImage.id, compressedBitmap);
+        setImage(newImage.id, compressedBitmap);
         dispatchWithSocket({ type: "ADD_SHAPE", payload: newImage });
         if (inRoom) {
           storeImg(compressedBlob).then((res: any) => {
             dispatchWithSocket({
               type: "UPD_SHAPE",
-              payload: { ...newImage, link: res },
+              payload: [{ ...newImage, link: res }],
             });
           });
         }

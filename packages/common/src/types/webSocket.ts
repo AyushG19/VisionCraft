@@ -47,12 +47,12 @@ const AddShapeSchema = z.object({
 
 const UpdShapeSchema = z.object({
   type: z.literal("UPD_SHAPE"),
-  payload: DrawSchema,
+  payload: z.array(DrawSchema),
 });
 
 const DelShapeSchema = z.object({
   type: z.literal("DEL_SHAPE"),
-  payload: z.string(),
+  payload: z.array(z.string()),
 });
 const DelManyShapeSchema = z.object({
   type: z.literal("BULK_DEL_SHAPE"),
@@ -73,7 +73,7 @@ const ServerResizeSchema = z.object({
 
 const ServerDragSchema = z.object({
   type: z.literal("DRAG"),
-  payload: z.object({ userId: z.string(), element: DrawSchema }),
+  payload: z.object({ userId: z.string(), elements: z.array(DrawSchema) }),
 });
 
 const ServerDeselectSchema = z.object({
@@ -97,7 +97,7 @@ const ClientResizeSchema = z.object({
 
 const ClientDragSchema = z.object({
   type: z.literal("DRAG"),
-  payload: DrawSchema,
+  payload: z.array(DrawSchema),
 });
 
 const ClientElementDeselectSchema = z.object({

@@ -4,6 +4,7 @@ import type {
   ElementDeletePayloadSchemaType,
   ChatUpsertPayloadSchemaType,
   ElementDeleteAllPayload,
+  ElementCreatePayloadSchemaType,
 } from "@repo/common";
 import { ELEMENT_JOBS } from "./element.job";
 import { CHAT_JOBS } from "./chat.job";
@@ -14,6 +15,7 @@ export { ELEMENT_JOBS, CHAT_JOBS, ROOM_JOBS };
 // Every possible job as a discriminated union
 // name narrows data automatically
 export type AppJob =
+  | { name: typeof ELEMENT_JOBS.CREATE; data: ElementCreatePayloadSchemaType }
   | { name: typeof ELEMENT_JOBS.UPSERT; data: ElementUpsertPayloadSchemaType }
   | { name: typeof ELEMENT_JOBS.DELETE; data: ElementDeletePayloadSchemaType }
   | { name: typeof ELEMENT_JOBS.DELETE_ALL; data: ElementDeleteAllPayload }

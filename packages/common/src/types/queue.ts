@@ -2,9 +2,18 @@ import z from "zod";
 import { DrawSchema } from "./canvas";
 import { ServerMessage } from "./message";
 
-export const ElementUpsertPayloadSchema = z.object({
+export const ElementCreatePayloadSchema = z.object({
   roomId: z.string(),
   element: DrawSchema,
+});
+
+export type ElementCreatePayloadSchemaType = z.infer<
+  typeof ElementCreatePayloadSchema
+>;
+
+export const ElementUpsertPayloadSchema = z.object({
+  roomId: z.string(),
+  elements: z.array(DrawSchema),
 });
 
 export type ElementUpsertPayloadSchemaType = z.infer<
@@ -13,7 +22,7 @@ export type ElementUpsertPayloadSchemaType = z.infer<
 
 export const ElementDeletePayloadSchema = z.object({
   roomId: z.string(),
-  elementId: z.string(),
+  elementId: z.array(z.string()),
 });
 
 export type ElementDeletePayloadSchemaType = z.infer<

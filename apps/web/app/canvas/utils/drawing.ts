@@ -2,7 +2,6 @@ import oklchToCSS from "../../lib/oklchToCss";
 import { ImageType, PointType, TextType, type DrawElement } from "@repo/common";
 import { drawHandles, drawLabel } from "../../canvas/helper/drawing.helpers";
 import { Camera } from "../hooks/useCamera";
-import { imageCache } from "./redrawPreviousShapes";
 import {
   drawEnhancedArrow,
   drawRoundedRhombus,
@@ -10,6 +9,7 @@ import {
 } from "../helper/drawShape.helper";
 import { measureText } from "../helper/canvas.helper";
 import { ShapeBounds } from "./getBoundsHelpers";
+import { getImage, setImage } from "./imageCache";
 
 // Type definitions for better type safety
 interface Point {
@@ -286,7 +286,7 @@ export const drawShape = (
     } else if (type === "line") {
       drawLine(ctx, { x: shape.startX, y: shape.startY }, shape.points);
     } else if (type === "image") {
-      drawImageShape(ctx, shape, imageCache);
+      drawImageShape(ctx, shape);
     }
   } finally {
     ctx.restore();
@@ -351,12 +351,9 @@ export const drawShape = (
 export const drawImageShape = (
   ctx: CanvasRenderingContext2D,
   shape: ImageType,
-  imageCache?: Map<string, ImageBitmap | Promise<ImageBitmap>>,
   onLoad?: () => void, // triggers re-render after bitmap loads
 ) => {
-  if (!imageCache) return;
-
-  const cached = imageCache.get(shape.id);
+  const cached = getImage(shape.id);
   ctx.lineWidth = shape.strokeWidth || 5;
   ctx.strokeStyle = oklchToCSS(shape.strokeColor) || "white";
   //Already ready — draw immediately
@@ -380,11 +377,11 @@ export const drawImageShape = (
       .then((r) => r.blob())
       .then((blob) => createImageBitmap(blob))
       .then((bm) => {
-        imageCache.set(shape.id, bm);
+        setImage(shape.id, bm);
         onLoad?.(); // trigger one redraw
         return bm;
       });
-    imageCache.set(shape.id, promise); // block duplicate calls
+    setImage(shape.id, promise); // block duplicate calls
     return;
   }
 };

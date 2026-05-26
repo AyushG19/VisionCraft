@@ -38,7 +38,7 @@ export type Action =
   | { type: "INITIALIZE_BOARD"; payload: DrawElement[] }
   | { type: "ADD_SHAPE"; payload: DrawElement }
   | { type: "DEL_SHAPE"; payload: string[] }
-  | { type: "UPD_SHAPE"; payload: DrawElement }
+  | { type: "UPD_SHAPE"; payload: DrawElement[] }
   | { type: "FINISH_SHAPE"; payload: DrawElement }
   | { type: "REDO" }
   | { type: "UNDO" }

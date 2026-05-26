@@ -127,7 +127,7 @@ const useRafLoop = ({
     ctx.setTransform(cam.z * dpr, 0, 0, cam.z * dpr, cam.x * dpr, cam.y * dpr);
 
     for (const [, { element, userId }] of activeElementMapRef.current!) {
-      drawShape(ctx, element, cam, false, element.id, getUserColor(userId));
+      drawShape(ctx, element, cam, true, element.id, getUserColor(userId));
     }
 
     for (const shape of selectedElementsRef.current) {

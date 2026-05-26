@@ -44,7 +44,7 @@ export async function UPD_SHAPE({
   }
   touchRoom(roomId);
 
-  const event: ElementRedisData = { type: "UPD", userId, element: payload };
+  const event: ElementRedisData = { type: "UPD", userId, elements: payload };
   element.update(roomId, event); //publist occurs here
 
   sendInfo(ws, "Shape updated");
@@ -67,7 +67,7 @@ export async function DEL_SHAPE({
   }
   touchRoom(roomId);
 
-  const event: ElementRedisData = { type: "DEL", userId, element: payload };
+  const event: ElementRedisData = { type: "DEL", userId, elementIds: payload };
   element.delete(roomId, event);
 
   sendInfo(ws, "Shape deleted");
@@ -128,7 +128,7 @@ export async function DRAG({
   const pubSubData: RedisData = {
     userId: userId,
     type: "DRAG",
-    element: cleanData.payload,
+    elements: cleanData.payload,
   };
   redisPub.publish(`room:${roomId}:events`, JSON.stringify(pubSubData));
   // sendInfo(ws, "Drag update sent");

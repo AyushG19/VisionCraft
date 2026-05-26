@@ -189,6 +189,8 @@ export const useSocketWithWhiteboard = () => {
       ];
       if (staticMutatingEvents.includes(event.type)) {
         staticDirtyRef.current = true;
+        console.log(scheduleRenderRef.current);
+        scheduleRenderRef.current();
       }
 
       handler({
@@ -213,7 +215,7 @@ export const useSocketWithWhiteboard = () => {
       const shape = selectedElementsRef.current[0];
       if (!shape) return;
       const updated = updater(shape);
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: updated });
+      dispatchWithSocket({ type: "UPD_SHAPE", payload: [updated] });
       // replace first element in array, keep rest
       selectedElementsRef.current = [
         updated,
@@ -274,7 +276,7 @@ export const useSocketWithWhiteboard = () => {
         : shape.label
           ? { ...shape, label: { ...shape.label, fontFamily: font } }
           : shape;
-    dispatchWithSocket({ type: "UPD_SHAPE", payload: updated });
+    dispatchWithSocket({ type: "UPD_SHAPE", payload: [updated] });
     selectedElementsRef.current = [
       updated,
       ...selectedElementsRef.current.slice(1),
@@ -335,6 +337,11 @@ export const useSocketWithWhiteboard = () => {
     const lastRoom = sessionStorage.getItem("activeRoom");
     if (lastRoom) handleJoinRoom(lastRoom);
   }, []);
+
+  useEffect(() => {
+    staticDirtyRef.current = true;
+    scheduleRenderRef.current();
+  }, [canvasState]);
 
   const setTextState = (p: Partial<TextStateType>) =>
     canvasDispatch({ type: "UPD_TEXT_STATE", payload: p });

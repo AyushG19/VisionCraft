@@ -1,8 +1,8 @@
 import {
   addChat,
-  deleteAllElements,
-  deleteElement,
-  upsertElement,
+  createElement,
+  deleteManyElements,
+  upsertManyElements,
 } from "@repo/db";
 import { CHAT_JOBS, ELEMENT_JOBS, Job, UnrecoverableError } from "@repo/queue";
 import {
@@ -11,14 +11,20 @@ import {
   ZodError,
   ChatUpsertPayloadSchema,
   ElementDeleteAllPayloadSchema,
+  ElementCreatePayloadSchema,
 } from "@repo/common";
 
 export async function processor(job: Job): Promise<void> {
   try {
     switch (job.name) {
+      case ELEMENT_JOBS.CREATE: {
+        const { element, roomId } = ElementCreatePayloadSchema.parse(job.data);
+        await createElement(roomId, element, 0);
+        break;
+      }
       case ELEMENT_JOBS.UPSERT: {
-        const { element, roomId } = ElementUpsertPayloadSchema.parse(job.data);
-        await upsertElement(element, roomId);
+        const { elements, roomId } = ElementUpsertPayloadSchema.parse(job.data);
+        await upsertManyElements(elements, roomId);
         break;
       }
 
@@ -26,7 +32,7 @@ export async function processor(job: Job): Promise<void> {
         const { roomId, elementId } = ElementDeletePayloadSchema.parse(
           job.data,
         );
-        await deleteElement(roomId, elementId);
+        await deleteManyElements(roomId, elementId);
         break;
       }
 
@@ -40,7 +46,7 @@ export async function processor(job: Job): Promise<void> {
         const { roomId, elementIds } = ElementDeleteAllPayloadSchema.parse(
           job.data,
         );
-        await deleteAllElements(roomId, elementIds);
+        await deleteManyElements(roomId, elementIds);
         break;
       }
 

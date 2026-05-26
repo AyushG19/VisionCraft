@@ -7,48 +7,48 @@ import {
 } from "@repo/common";
 import { DragStateType, ResizeStateType } from "../types";
 
-export const createDragedElement = (
-  dragState: DragStateType,
-  currMousePos: { x: number; y: number },
-  shape: DrawElement,
-): DrawElement => {
-  const newX = currMousePos.x - dragState.offsetX;
-  const newY = currMousePos.y - dragState.offsetY;
+// export const createDragedElement = (
+//   dragState: DragStateType,
+//   currMousePos: { x: number; y: number },
+//   shape: DrawElement,
+// ): DrawElement => {
+//   const newX = currMousePos.x - dragState.offsetX;
+//   const newY = currMousePos.y - dragState.offsetY;
 
-  if (
-    shape.type === "rectangle" ||
-    shape.type === "ellipse" ||
-    shape.type === "diamond" ||
-    shape.type === "pencil"
-  ) {
-    const dx = shape.endX - shape.startX;
-    const dy = shape.endY - shape.startY;
-    return {
-      ...shape,
-      startX: newX,
-      startY: newY,
-      endX: newX + dx,
-      endY: newY + dy,
-    };
-  }
+//   if (
+//     shape.type === "rectangle" ||
+//     shape.type === "ellipse" ||
+//     shape.type === "diamond" ||
+//     shape.type === "pencil"
+//   ) {
+//     const dx = shape.endX - shape.startX;
+//     const dy = shape.endY - shape.startY;
+//     return {
+//       ...shape,
+//       startX: newX,
+//       startY: newY,
+//       endX: newX + dx,
+//       endY: newY + dy,
+//     };
+//   }
 
-  if (shape.type === "text" || shape.type === "image") {
-    return { ...shape, startX: newX, startY: newY };
-  }
+//   if (shape.type === "text" || shape.type === "image") {
+//     return { ...shape, startX: newX, startY: newY };
+//   }
 
-  if (shape.type === "arrow" || shape.type === "line") {
-    const dx = newX - shape.startX;
-    const dy = newY - shape.startY;
+//   if (shape.type === "arrow" || shape.type === "line") {
+//     const dx = newX - shape.startX;
+//     const dy = newY - shape.startY;
 
-    return {
-      ...shape,
-      startX: newX,
-      startY: newY,
-    };
-  }
+//     return {
+//       ...shape,
+//       startX: newX,
+//       startY: newY,
+//     };
+//   }
 
-  return shape;
-};
+//   return shape;
+// };
 
 export const createDraggedGroup = (
   dragState: DragStateType,

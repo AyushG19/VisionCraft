@@ -46,7 +46,27 @@ export async function upsertElement(element: DrawElement, roomId: string) {
   });
 }
 
-export async function deleteAllElements(
+export async function upsertManyElements(
+  elements: DrawElement[],
+  roomId: string,
+) {
+  await db.$transaction(
+    elements.map((element) =>
+      db.canvasElements.upsert({
+        where: { id: element.id },
+        update: { data: element as unknown as Prisma.InputJsonValue },
+        create: {
+          id: element.id,
+          type: element.type,
+          roomId,
+          data: element as unknown as Prisma.InputJsonValue,
+        },
+      }),
+    ),
+  );
+}
+
+export async function deleteManyElements(
   roomId: string,
   elementIds: string[],
 ): Promise<void> {

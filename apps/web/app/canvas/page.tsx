@@ -13,7 +13,6 @@ import { ErrorModal } from "@workspace/ui/components/ErrorModal";
 import { useTheme } from "next-themes";
 import { DrawElement } from "@repo/common";
 import { useEffect } from "react";
-// import { useUser } from "@repo/hooks";
 import { logout } from "../services/auth.service";
 import UsersCursor from "@workspace/ui/components/ui/UsersCursor";
 import { useError, useUser } from "@repo/hooks";
@@ -22,7 +21,6 @@ import { getProfile } from "../services/user.service";
 const Page = () => {
   const { theme, setTheme } = useTheme();
   const { setError } = useError();
-  // useRafLoop({ cursorMap: memberCursor.current });
   const { currentUser, setCurrentUser } = useUser();
   const wb = useSocketWithWhiteboard();
 
