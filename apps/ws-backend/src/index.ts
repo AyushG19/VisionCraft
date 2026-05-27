@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws";
 import type { JwtPayloadType } from "@repo/common";
-import { redisPub } from "@repo/redis/dist";
+import { redisPub } from "@repo/redis";
 import {
   validateConnection,
   validateSocketData,

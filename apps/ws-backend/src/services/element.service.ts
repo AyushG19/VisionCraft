@@ -1,4 +1,4 @@
-import type { RedisClient } from "@repo/redis/dist";
+import type { RedisClient } from "@repo/redis";
 import { ELEMENT_JOBS, type AppQueueType } from "@repo/queue";
 import { RedisData } from "../types";
 

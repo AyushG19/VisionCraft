@@ -7,7 +7,7 @@ import {
 } from "./room.state";
 import { convertToSocketData } from "../util/convertToSocketData";
 import { CustomWs, RedisData } from "../types";
-import { redisPub, redisSub } from "@repo/redis/dist";
+import { redisPub, redisSub } from "@repo/redis";
 import { broadcastToRoom } from "../helpers/ws.helper";
 import { WebSocketServer } from "ws";
 

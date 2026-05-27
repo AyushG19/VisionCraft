@@ -1,5 +1,5 @@
 import { AppQueueType, CHAT_JOBS } from "@repo/queue";
-import { RedisClient } from "@repo/redis/dist";
+import { RedisClient } from "@repo/redis";
 import { RedisData } from "../types";
 
 export type ChatRedisData = Extract<RedisData, { type: "CHAT" }>;
