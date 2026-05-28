@@ -37,7 +37,7 @@ export const createSelectInteraction = (
     resetDragAndResize,
   } = interactionState;
 
-  // marquee state lives here — pure interaction concern
+  // marquee state lives here pure interaction concern
   const marqueeRef = { current: null as MarqueeState | null };
 
   const handleSelectMouseDown = (
@@ -47,7 +47,7 @@ export const createSelectInteraction = (
     activeElementMapRef: React.RefObject<ActiveElementMapType>,
     isShiftHeld: boolean,
   ): DrawElement[] => {
-    // Case 1: check handles first — only single select has handles
+    //check handles first — only single select has handles
     if (currSelected.length === 1 && !isShiftHeld) {
       const handleBounds = getBoundsForHandles(currSelected[0]!);
       if (handleBounds?.type === "rect") {
@@ -64,7 +64,7 @@ export const createSelectInteraction = (
       }
     }
 
-    // Case 2: check if hit the body of current selection
+    // check if hit the body of current selection
     // but ONLY when not shift-held — shift always goes to find new shape
     if (currSelected.length > 0 && !isShiftHeld) {
       const groupBounds = getGroupOutlineBounds(currSelected);
@@ -74,12 +74,12 @@ export const createSelectInteraction = (
       }
     }
 
-    // Case 3: find a shape under the cursor
+    // find a shape under the cursor
     const clicked = [...canvasState.drawnShapes]
       .reverse()
       .find((s) => !s.isDeleted && isClickOnShape(worldPos, s));
 
-    // Case 4: shift+click on a shape — toggle it in/out of selection
+    // shift+click on a shape — toggle it in/out of selection
     if (clicked && isShiftHeld) {
       const isLockedByOther = [...activeElementMapRef.current.values()].some(
         (e) => e.element.id === clicked.id,
@@ -99,7 +99,7 @@ export const createSelectInteraction = (
       return next;
     }
 
-    // Case 5: plain click on a shape — select only this one
+    // plain click on a shape — select only this one
     if (clicked) {
       const isLockedByOther = [...activeElementMapRef.current.values()].some(
         (e) => e.element.id === clicked.id,
@@ -110,7 +110,7 @@ export const createSelectInteraction = (
       return [clicked];
     }
 
-    // Case 6: clicked empty space — start marquee
+    // clicked empty space — start marquee
     marqueeRef.current = {
       isActive: true,
       startX: worldPos.x,
@@ -127,10 +127,9 @@ export const createSelectInteraction = (
   const handleSelectMouseMove = (
     worldPos: { x: number; y: number },
     currSelected: DrawElement[],
-    canvasState: CanvasState, // needed for marquee hit testing
+    canvasState: CanvasState,
     isShiftHeld: boolean,
   ): { shapes: DrawElement[]; marquee: MarqueeState | null } | null => {
-    // marquee in progress
     if (marqueeRef.current?.isActive) {
       marqueeRef.current = {
         ...marqueeRef.current,
@@ -147,7 +146,7 @@ export const createSelectInteraction = (
       // select all shapes whose bounding box intersects the marquee
       const inMarquee = canvasState.drawnShapes.filter((s) => {
         if (s.isDeleted) return false;
-        const b = getOutlineBounds(s); // see helper below
+        const b = getOutlineBounds(s);
         if (!b) return null;
         return (
           b.x <= maxX &&
@@ -201,7 +200,7 @@ export const createSelectInteraction = (
     canvasState: CanvasState,
     isShiftHeld: boolean,
   ): { shapes: DrawElement[]; didCommit: boolean } => {
-    // end marquee — selection is already up to date from mousemove
+    // end marquee selection is already up to date from mousemove
     if (marqueeRef.current?.isActive) {
       marqueeRef.current = null;
       resetDragAndResize();

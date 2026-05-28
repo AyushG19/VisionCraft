@@ -9,7 +9,7 @@ export async function getExcalidrawElements(
   const diagramDefinition = await fetchMermaidPrompt(userPrompt);
   const res = await parseMermaidToExcalidraw(diagramDefinition, {
     themeVariables: {
-      fontSize: `${fontSize}px` || "10px",
+      fontSize: fontSize ? `${fontSize}px` : "10px",
     },
   });
 

@@ -9,7 +9,7 @@ export type SideChatPropsType = {
   send: (type: sendType["type"], payload: sendType["payload"]) => void;
   messages: ServerMessageType[];
   setMessages: React.Dispatch<React.SetStateAction<ServerMessageType[]>>;
-  fetchChartFromAi: (userCommand: string) => void;
+  fetchChartFromAi: (userCommand: string) => Promise<string>;
   isOpen: boolean;
   isLoading: boolean;
   slug: string;

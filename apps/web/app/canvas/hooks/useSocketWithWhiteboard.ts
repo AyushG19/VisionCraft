@@ -12,6 +12,7 @@ import canvasReducer, { initialCanvasState } from "../utils/canvasReducer";
 import {
   Action,
   ActiveElementMapType,
+  AIResultType,
   CanvasState,
   FontTypes,
   SendPropsType,
@@ -39,13 +40,18 @@ import {
   createRoomService,
   joinRoomService,
 } from "../../services/canvas.service";
-import { RoomInfo, useSocketContext } from "@repo/hooks";
+import { useToast, useSocketContext } from "@repo/hooks";
 import {
   generateUserObject,
   incomingSocketHandlers,
 } from "../../canvas/helper/socketMessage.helper";
 import { Camera } from "./useCamera";
 import useCanvasRenderer from "./useCanvasRenderer";
+import { ExcalidrawElementSkeleton } from "@workspace/ui/components/types";
+import { convertAllElements } from "../utils/elementsConverter";
+import { getGroupOutlineBounds } from "../utils/getBoundsHelpers";
+import { createDraggedGroup } from "../utils/createTempShapeHelper";
+import { screenToWorld } from "../../lib/math";
 
 export const useSocketWithWhiteboard = () => {
   const [canvasState, canvasDispatch] = useReducer(
@@ -53,7 +59,9 @@ export const useSocketWithWhiteboard = () => {
     initialCanvasState,
   );
   const [messages, setMessages] = useState<ServerMessageType[]>([]);
-
+  const [selectedElementForUI, setSelectedElementForUI] = useState<
+    DrawElement | undefined
+  >(undefined);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -64,6 +72,7 @@ export const useSocketWithWhiteboard = () => {
   const onMessageRef = useRef<((event: ServerSocketDataType) => void) | null>(
     null,
   );
+  const { setToast } = useToast();
 
   const {
     inRoom,
@@ -132,7 +141,7 @@ export const useSocketWithWhiteboard = () => {
     [send, inRoom],
   );
 
-  // ── 1. interaction — produces selectedElementsRef, marqueeStateRef, cameraRef
+  //interaction — produces selectedElementsRef, marqueeStateRef, cameraRef
   const {
     selectedElementsRef,
     marqueeStateRef,
@@ -153,28 +162,29 @@ export const useSocketWithWhiteboard = () => {
     inRoom,
     sideToolkitRef.current,
     sendActiveElementUpdate,
-    () => scheduleRenderRef.current(), // stable bridge
+    () => scheduleRenderRef.current(),
     activeElementMap,
     staticDirtyRef,
+    setSelectedElementForUI,
   );
 
-  // ── 2. renderer — needs refs from interaction above
+  // renderer — needs refs from interaction above
   const { scheduleRender } = useCanvasRenderer(
     canvasRef,
     canvasState,
     selectedElementsRef,
-    marqueeStateRef, // ← was missing
+    marqueeStateRef,
     cameraRef,
     memberCursor,
     activeElementMap,
     staticDirtyRef,
-    interactionState,
+    interactionState.interaction,
   );
 
-  // ── 3. wire actual scheduleRender into bridge ref
+  // wire actual scheduleRender into bridge ref
   scheduleRenderRef.current = scheduleRender;
 
-  // ── 4. socket message handler — always reads latest state via closure
+  // socket message handler — always reads latest state via closure
   onMessageRef.current = (event: ServerSocketDataType) => {
     try {
       const handler = incomingSocketHandlers[event.type];
@@ -200,23 +210,21 @@ export const useSocketWithWhiteboard = () => {
         setMessages,
         setRoomInfo,
         activeElementMap: activeElementMap.current,
-        scheduleRender,
+        setToast,
       });
     } catch (err) {
       console.error("Failed to handle socket message:", err);
     }
   };
 
-  // ── 5. shape property handlers
+  // shape property handlers
   // all follow: update shape → dispatch → update ref → render
   const updateSelectedShape = useCallback(
     (updater: (shape: DrawElement) => DrawElement) => {
-      // applies to first selected shape (single select context)
       const shape = selectedElementsRef.current[0];
       if (!shape) return;
       const updated = updater(shape);
       dispatchWithSocket({ type: "UPD_SHAPE", payload: [updated] });
-      // replace first element in array, keep rest
       selectedElementsRef.current = [
         updated,
         ...selectedElementsRef.current.slice(1),
@@ -226,6 +234,45 @@ export const useSocketWithWhiteboard = () => {
     },
     [dispatchWithSocket],
   );
+
+  const ConvertAndCenterGroupToScreenMiddle = (
+    aiElements: ExcalidrawElementSkeleton[],
+    camera: Camera,
+  ): AIResultType[] => {
+    const elements = convertAllElements(aiElements);
+    if (elements.length === 0) return elements;
+    const bounds = getGroupOutlineBounds(elements);
+    if (!bounds) return elements;
+    const { x, y, width, height } = bounds;
+    const groupCenterX = x + width / 2;
+    const groupCenterY = y + height / 2;
+
+    // where is the screen center in world space right now
+    const screenMiddle = screenToWorld(
+      window.innerWidth / 2,
+      window.innerHeight / 2,
+      camera,
+    );
+
+    // how much to shift each element
+    const dx = screenMiddle.x - groupCenterX;
+    const dy = screenMiddle.y - groupCenterY;
+
+    return elements.map((e) => {
+      if ("endX" in e) {
+        return {
+          ...e,
+          startX: e.startX + dx,
+          startY: e.startY + dy,
+          endX: e.endX + dx,
+          endY: e.endY + dy,
+        };
+      } else {
+        // linear or pencil — points are relative so only startX/startY shifts
+        return { ...e, startX: e.startX + dx, startY: e.startY + dy };
+      }
+    });
+  };
 
   const handleColorSelect = (
     color: { l: number; c: number; h: number },
@@ -387,5 +434,7 @@ export const useSocketWithWhiteboard = () => {
     setTextState,
     slug: roomInfo.slug,
     users: roomInfo.users,
+    selectedElementForUI,
+    ConvertAndCenterGroupToScreenMiddle,
   };
 };

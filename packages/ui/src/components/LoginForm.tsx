@@ -312,8 +312,6 @@ export function MainContent({
   );
 }
 
-// Email modal component
-
 // Diagram box component
 export function DiagramBox() {
   return (
@@ -350,12 +348,12 @@ export function DiagramBox() {
         />
       </svg>
       {/* Overlay border */}
-      <div className="absolute left-0 top-0 h-full w-full border-2 border-easy-blue" />
+      <div className="absolute -left-1 -top-1 -bottom-1 -right-1 outline-1 outline-easy-blue " />
       {/* Corner squares */}
-      <div className="absolute -left-1 -top-1 h-2 w-2 border border-easy-blue bg-gray-300" />
-      <div className="absolute -bottom-1 -left-1 h-2 w-2 border border-easy-blue bg-gray-300" />
-      <div className="absolute -bottom-1 -right-1 h-2 w-2 border border-easy-blue bg-gray-300" />
-      <div className="absolute -right-1 -top-1 h-2 w-2 border border-easy-blue bg-gray-300" />
+      <div className="absolute -left-2 -top-2 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px]" />
+      <div className="absolute -bottom-2 -left-2 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px]" />
+      <div className="absolute -bottom-2 -right-2 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px]" />
+      <div className="absolute -right-2 -top-2 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px] " />
     </div>
   );
 }

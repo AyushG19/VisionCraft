@@ -112,9 +112,25 @@ const EmailModal = ({
       }
     }
   };
+
+  const handleNextOrsubmit = () => {
+    if (currStage === stages.at(-1)) {
+      handleSubmit();
+    } else {
+      setStage((prev) => (prev + 1) % 4);
+    }
+  };
+  const handleClickOrKey = (
+    e: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
+  ) => {
+    e.stopPropagation();
+    if (e instanceof KeyboardEvent && e.key !== "Enter") return;
+
+    handleNextOrsubmit();
+  };
   return (
     <div>
-      <div className="relative w-full lg:w-110 shadow-primary outline-1 outline-global-shadow">
+      <div className="relative w-full lg:w-110">
         {/* Main modal content */}
         <div className="flex h-full w-full flex-col items-center justify-center gap-5 rounded-[20px] border border-black bg-easy-purple px-4 lg:px-6 py-6 box-shadow-black">
           {/* Email section */}
@@ -133,6 +149,7 @@ const EmailModal = ({
                       ? "password"
                       : ""
                   }
+                  onKeyDown={handleClickOrKey}
                   value={currStage.state}
                   onInput={(e) => currStage.setState(e.currentTarget.value)}
                   placeholder={currStage?.placeholder}
@@ -140,12 +157,8 @@ const EmailModal = ({
                 ></Input>
               )}
               <Button
-                onClick={() =>
-                  currStage === stages.at(-1)
-                    ? handleSubmit()
-                    : setStage((prev) => (prev + 1) % 4)
-                }
-                className="w-16 -ml-4  bg-easy-purple-muted text-easy-bg"
+                onClick={handleClickOrKey}
+                className="w-16 -ml-4  bg-easy-purple-muted text-easy-bg shadow-shinyprimary"
                 variant={"iconic"}
                 size={"xl"}
               >
@@ -168,7 +181,7 @@ const EmailModal = ({
             <Button
               size={"xl"}
               variant={"iconic"}
-              className="bg-easy-yellow group"
+              className="bg-easy-yellow group shadow-shinyprimary"
               onClick={() => handleProviderClick("google")}
             >
               <IconBrandGoogleFilled className="text-easy-bg mr-2" />
@@ -182,7 +195,7 @@ const EmailModal = ({
             <Button
               size={"xl"}
               variant={"iconic"}
-              className="bg-easy-lime group"
+              className="bg-easy-lime group shadow-shinyprimary"
               onClick={() => handleProviderClick("github")}
             >
               <IconBrandGithubFilled className="text-easy-bg mr-2" />
@@ -233,11 +246,11 @@ const EmailModal = ({
           </div>
         </div>
         {/* Corner markers */}
-        <div className="pointer-events-none absolute inset-0 border-2 border-easy-blue">
-          <div className="absolute -right-1 -top-1 h-2 w-2 border border-easy-blue bg-gray-300" />
-          <div className="absolute -bottom-1 -right-1 h-2 w-2 border border-easy-blue bg-gray-300" />
-          <div className="absolute -bottom-1 -left-1 h-2 w-2 border border-easy-blue bg-gray-300" />
-          <div className="absolute -left-1 -top-1 h-2 w-2 border border-easy-blue bg-gray-300" />
+        <div className="pointer-events-none absolute -top-1 -left-1 -right-1 -bottom-1 border-1 border-easy-blue">
+          <div className="absolute -right-1 -top-1 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px]" />
+          <div className="absolute -bottom-1 -right-1 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px]" />
+          <div className="absolute -bottom-1 -left-1 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px] " />
+          <div className="absolute -left-1 -top-1 h-2 w-2 border border-easy-blue bg-gray-300 rounded-[3px]" />
         </div>
         {/* Hand pointer and dimension label */}
         <svg
@@ -283,7 +296,7 @@ const EmailModal = ({
             ></path>
           </g>
         </svg>
-        <p className="absolute bottom-0 translate-y-full text-white opacity-50 text-xs w-full -mb-2">
+        <p className="absolute bottom-0 translate-y-full text-white opacity-50 text-xs w-full -mb-3">
           By continuing you are agreeing to our <br />
           <a className="text-easy-light-blue hover:underline hover:cursor-pointer mr-1">
             Terms of Use

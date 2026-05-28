@@ -7,7 +7,7 @@ import {
 import { Action, ActiveElementMapType } from "../../canvas/types";
 import React from "react";
 import { getUserColor } from "./color.helper";
-import { RoomInfo } from "@repo/hooks";
+import { RoomInfo, Toast } from "@repo/hooks";
 import { getUserInfo } from "../../services/user.service";
 
 export const generateUserObject = (user: UserType) => {
@@ -25,40 +25,36 @@ export type eventHandlerContext = {
   memberCursorMap: Map<string, PointType>;
   event: ServerSocketDataType;
   activeElementMap: ActiveElementMapType;
-  scheduleRender: () => void;
+  setToast: (toast: Toast) => void;
 };
 export const incomingSocketHandlers: Record<
   ServerSocketDataType["type"],
   (ctx: eventHandlerContext) => void
 > = {
-  ADD_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
+  ADD_SHAPE: ({ event, canvasDispatch }) => {
     if (event.type !== "ADD_SHAPE") return;
     const shape = event.payload;
     if (shape) {
       canvasDispatch({ type: "ADD_SHAPE", payload: shape });
-      scheduleRender();
     }
   },
 
-  UPD_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
+  UPD_SHAPE: ({ event, canvasDispatch }) => {
     if (event.type !== "UPD_SHAPE") return;
     const shape = event.payload;
     if (shape) {
       canvasDispatch({ type: "UPD_SHAPE", payload: shape });
-      scheduleRender();
     }
   },
 
-  DEL_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
+  DEL_SHAPE: ({ event, canvasDispatch }) => {
     if (event.type !== "DEL_SHAPE") return;
     canvasDispatch({ type: "DEL_SHAPE", payload: event.payload });
-    scheduleRender();
   },
 
-  BULK_DEL_SHAPE: ({ event, canvasDispatch, scheduleRender }) => {
+  BULK_DEL_SHAPE: ({ event, canvasDispatch }) => {
     if (event.type !== "BULK_DEL_SHAPE") return;
     canvasDispatch({ type: "BULK_DEL_SHAPE", payload: event.payload });
-    scheduleRender();
   },
 
   CHAT: ({ event, setMessages }) => {
@@ -67,11 +63,10 @@ export const incomingSocketHandlers: Record<
     setMessages((prev) => [...prev, message]);
   },
 
-  CURSOR: ({ event, memberCursorMap, scheduleRender }) => {
+  CURSOR: ({ event, memberCursorMap }) => {
     if (event.type !== "CURSOR") return;
     const { userId, coordinates } = event.payload;
     memberCursorMap.set(userId, coordinates);
-    scheduleRender();
   },
 
   USER_LEFT: ({ event, memberCursorMap, setRoomInfo }) => {
@@ -94,7 +89,7 @@ export const incomingSocketHandlers: Record<
     }));
   },
 
-  RESIZE: async ({ event, activeElementMap, scheduleRender }) => {
+  RESIZE: async ({ event, activeElementMap }) => {
     if (event.type !== "RESIZE") return;
     const { userId, element } = event.payload;
     activeElementMap.set(element.id, {
@@ -102,10 +97,9 @@ export const incomingSocketHandlers: Record<
       isDirty: true,
       userId,
     });
-    scheduleRender();
   },
 
-  DRAG: async ({ event, activeElementMap, scheduleRender }) => {
+  DRAG: async ({ event, activeElementMap }) => {
     if (event.type !== "DRAG") return;
     const { userId, elements } = event.payload;
     elements.forEach((e) => {
@@ -115,19 +109,23 @@ export const incomingSocketHandlers: Record<
         userId,
       });
     });
-    scheduleRender();
   },
-  INFO: () => null,
-  DESELECT: ({ event, activeElementMap, scheduleRender }) => {
+  INFO: ({ event, setToast }) => {
+    if (event.type !== "INFO") return;
+    setToast({ type: "info", message: event.payload, title: "excuse me!" });
+  },
+  ERROR: ({ event, setToast }) => {
+    if (event.type !== "ERROR") return;
+    setToast({ type: "error", message: event.payload, title: "Socket error!" });
+  },
+  DESELECT: ({ event, activeElementMap }) => {
     if (event.type !== "DESELECT") return;
     for (const [key, val] of activeElementMap.entries()) {
       if (val.userId === event.payload.userId) activeElementMap.delete(key);
     }
-    scheduleRender();
   },
-  CLEAR_CANVAS: ({ event, canvasDispatch, scheduleRender }) => {
+  CLEAR_CANVAS: ({ event, canvasDispatch }) => {
     if (event.type !== "CLEAR_CANVAS") return;
     canvasDispatch({ type: "CLEAR_CANVAS" });
-    scheduleRender();
   },
 };

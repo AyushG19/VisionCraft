@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { env } from "../../config";
 import { SendPropsType } from "../types";
-import { useError, useSocketContext } from "@repo/hooks";
+import { useToast, useSocketContext } from "@repo/hooks";
 import { ServerSocketData, ServerSocketDataType } from "@repo/common";
 
 export function useCanvasSocket(
@@ -13,7 +13,7 @@ export function useCanvasSocket(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const { setInRoom } = useSocketContext();
-  const { setError } = useError();
+  const { setToast } = useToast();
 
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_DELAY = 2000;
@@ -39,7 +39,11 @@ export function useCanvasSocket(
     try {
       wsRef.current.send(JSON.stringify({ type: "LEAVE_ROOM" }));
     } catch (error: any) {
-      setError({ code: "VALIDATION_ERROR", message: error?.message });
+      setToast({
+        title: "connection error!",
+        message: error?.message,
+        type: "error",
+      });
     }
   };
 
@@ -70,18 +74,20 @@ export function useCanvasSocket(
         onMessage(validatedData.data);
       } else {
         console.log(validatedData.error);
-        setError({
-          code: "VALIDATION_ERROR",
-          message: "Invalid Data type from socket.",
+        setToast({
+          title: "invalid response!",
+          message: "Invalid Data type from server.",
+          type: "error",
         });
       }
     };
 
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
-      setError({
-        code: "NETWORK_ERROR",
-        message: "Error in Websocket,RETRY",
+      setToast({
+        title: "network error!",
+        message: "Error connecting,RETRY!",
+        type: "error",
       });
     };
 

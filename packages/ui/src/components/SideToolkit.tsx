@@ -160,7 +160,7 @@ const SliderRow = ({
     [&::-webkit-slider-thumb]:appearance-none
     [&::-webkit-slider-thumb]:size-[18px]
     [&::-webkit-slider-thumb]:rounded-full
-    [&::-webkit-slider-thumb]:-mt-[7px]  
+    [&::-webkit-slider-thumb]:-mt-[7px]
     [&::-webkit-slider-thumb]:bg-white
     [&::-webkit-slider-thumb]:border-2
     [&::-webkit-slider-thumb]:border-global-shadow
@@ -201,7 +201,7 @@ export const SideToolkit = ({
   shapeEditHelpers,
 }: SideToolkitProps) => {
   const dragState = useRef({ on: false, ox: 0, oy: 0 });
-  const [pos, setPos] = useState({ x: 16, y: 80 });
+  const [pos, setPos] = useState({ x: 10, y: 10 });
 
   const activeTool = selectedShape?.type || tool;
 
@@ -250,7 +250,7 @@ export const SideToolkit = ({
         fontFamily: s.fontFamily,
       });
     }
-  }, [selectedShape?.id]);
+  }, [selectedShape]);
 
   const handleStrokeColorChange = useCallback(
     (c: { l: number; c: number; h: number }) => {
@@ -349,6 +349,7 @@ export const SideToolkit = ({
   // ─── Drag (mouse) ────────────────────────────────────────────────────────
 
   const onHandleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     if (e.target !== panelRef.current) return;
     dragState.current.on = true;
     const r = panelRef.current!.getBoundingClientRect();
@@ -372,7 +373,10 @@ export const SideToolkit = ({
       );
       setPos({ x, y });
     };
-    const onUp = () => (dragState.current.on = false);
+    const onUp = (e: MouseEvent) => {
+      e.stopPropagation();
+      dragState.current.on = false;
+    };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
@@ -460,7 +464,8 @@ export const SideToolkit = ({
           <div className="bg-secondary flex items-center gap-1 flex-wrap p-1.5 rounded-sm w-full">
             <button
               // key={i}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 handleFillColorChange(undefined, selectedShape as ShapeType);
                 // if (selectedShape && isShape(selectedShape.type));
                 // onOklchChange(c, selectedShape as ShapeType);

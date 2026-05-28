@@ -127,8 +127,7 @@ const Toolkit = ({
   const onMouseDown = useCallback(
     (e: PointerEvent) => {
       if (!toolkitRef.current || !resizeRef.current) return;
-      if (e.target !== toolkitRef.current && e.target !== resizeRef.current)
-        return;
+
       if (e.target !== resizeRef.current) {
         dragState.current = {
           isDraging: true,
@@ -230,9 +229,9 @@ const Toolkit = ({
       <div
         ref={toolkitRef}
         draggable={false}
-        className="lg:p-3 lg:pb-3.5 p-2 !pr-0 absolute top-0 left-0 rounded-lg flex items-center cursor-move bg-primary outline-1 outline-global-shadow shadow-shinyprimary "
+        className="lg:p-3 p-2 !pr-0 absolute top-0 left-0 rounded-lg flex items-center cursor-move bg-primary outline-1 outline-global-shadow shadow-shinyprimary text-primary-contrast "
       >
-        <div ref={toolIconRef} className="flex flex-wrap gap-1 lg:gap-2 ">
+        <div ref={toolIconRef} className="flex flex-wrap gap-1 lg:gap-2">
           {tools.map((tool) => {
             return (
               <ToolIcon
@@ -249,6 +248,7 @@ const Toolkit = ({
           {/* <div className="h-8 w-[1px] ml-1 mt-1 bg-black"></div> */}
         </div>
         <IconGripVertical
+          color="currentColor"
           ref={resizeRef}
           className="cursor-e-resize w-4 h-full ml-1 shrink-0 "
         />

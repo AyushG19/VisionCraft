@@ -5,7 +5,13 @@ import { Button } from "./ui/button";
 import { Virtuoso } from "react-virtuoso";
 import MessageBubble from "./ui/MessageBubble";
 import { SideChatPropsType } from "./types";
-import { useError, UserInfo, useSocketContext, useUser } from "@repo/hooks";
+import {
+  useError,
+  UserInfo,
+  useSocketContext,
+  useToast,
+  useUser,
+} from "@repo/hooks";
 import OptionModal, { selected } from "./ui/OptionModal";
 import { AnimatePresence, motion } from "motion/react";
 import ChatTop from "./ChatTop";
@@ -34,11 +40,15 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
 
     const { currentUser } = useUser();
     const { roomInfo } = useSocketContext();
-    const { setError } = useError();
+    const { setToast } = useToast();
 
     const handleMessageSend = async (content: string) => {
       if (currentUser === null) {
-        setError({ code: "VALIDATION_ERROR", message: "Please Login again." });
+        setToast({
+          title: "oops not logged in!",
+          message: "Please Login again.",
+          type: "info",
+        });
         return;
       }
       const { userId, name } = currentUser;
@@ -52,7 +62,15 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
 
       if (content.startsWith("/draw")) {
         const command = content.replace("/draw", "").trim();
-        fetchChartFromAi(command);
+        fetchChartFromAi(command).then((reply) => {
+          const llmReply: ServerMessageType = {
+            content: reply,
+            name: "bobo",
+            sender_id: crypto.randomUUID(),
+            timeStamp_ms: Date.now(),
+          };
+          setMessages((prev) => [...prev, llmReply]);
+        });
         setMessages((prev) => [...prev, userMessage]);
         setInputText("");
         return;
@@ -74,6 +92,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+      e.stopPropagation();
       if (!inputRef.current) return;
       if (e.key === "Enter" && inputText.trim()) {
         handleMessageSend(inputText);
@@ -108,7 +127,9 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
             <div className="w-full relative !h-full bg-gradient-to-t from-primary via-secondary to-primary overflow-hidden ">
               <div className="absolute inset-0 bg-[url('/pattern-2.svg')] bg-repeat bg-top-left opacity-20 pointer-events-none " />
 
-              <div className="absolute h-full inset-0 bottom-14 p-2 pt-20">
+              <div
+                className={`absolute h-full inset-0 bottom-14 p-2 ${inRoom ? "pt-20" : "pt-2"}`}
+              >
                 <Virtuoso
                   data={messages}
                   initialTopMostItemIndex={messages.length - 1}
@@ -135,8 +156,8 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
                       position = "last";
                     }
 
-                    let isOwn = false;
-                    if (inRoom && currentUser) {
+                    let isOwn = true;
+                    if (currentUser) {
                       isOwn = message.sender_id === currentUser.userId;
                     }
 
@@ -172,7 +193,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
                 onClick={handleShowOption}
                 aria-label="command"
                 variant={"outline"}
-                className="h-full p-0 aspect-square  rounded-md cursor-pointer text-primary-contrast hover:bg-accent flex items-center justify-center transition-colors"
+                className="h-full p-1 aspect-square  rounded-md cursor-pointer text-primary-contrast hover:bg-accent flex items-center justify-center transition-colors"
               >
                 {isLoading ? (
                   <Loader />
@@ -209,5 +230,6 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
     );
   },
 );
+SideCollapseChat.displayName = "SideCollapseChat";
 
 export default SideCollapseChat;

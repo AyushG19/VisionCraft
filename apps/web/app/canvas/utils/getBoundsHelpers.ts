@@ -1,4 +1,5 @@
 import { DrawElement } from "@repo/common";
+import { AIResultType } from "../types";
 
 export type Bounds = {
   x: number;
@@ -46,11 +47,17 @@ export const getOutlineBounds = (shape: DrawElement): Bounds | null => {
 
     case "arrow":
     case "line": {
+      const endX = shape.startX + shape.points[2]!.x;
+      const endY = shape.startY + shape.points[2]!.y;
+
+      const x = Math.min(shape.startX, endX);
+      const y = Math.min(shape.startY, endY);
+
       return {
-        x: shape.startX,
-        y: shape.startY,
-        width: shape.points[2]!.x,
-        height: shape.points[2]!.y,
+        x,
+        y,
+        width: Math.abs(endX - shape.startX),
+        height: Math.abs(endY - shape.startY),
       };
     }
 
@@ -111,7 +118,9 @@ export const getBoundsForHandles = (shape: DrawElement): ShapeBounds | null => {
 
 // convenience — callers that only need marquee intersection
 // use this instead of getOutlineBounds directly
-export const getGroupOutlineBounds = (shapes: DrawElement[]): Bounds | null => {
+export const getGroupOutlineBounds = (
+  shapes: DrawElement[] | AIResultType[],
+): Bounds | null => {
   if (shapes.length === 0) return null;
 
   let minX = Infinity,

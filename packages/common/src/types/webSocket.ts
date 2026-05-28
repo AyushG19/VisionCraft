@@ -130,7 +130,10 @@ export const ServerInfoSchema = z.object({
   type: z.literal("INFO"),
   payload: z.string(),
 });
-
+export const ServerErrorSchema = z.object({
+  type: z.literal("ERROR"),
+  payload: z.string(),
+});
 export const ClientClearCanvasSchema = z.object({
   type: z.literal("CLEAR_CANVAS"),
   payload: z.object({}),
@@ -159,6 +162,7 @@ export const ServerSocketData = z.discriminatedUnion("type", [
   ServerDragSchema,
   ServerDeselectSchema,
   ServerInfoSchema,
+  ServerErrorSchema,
   ServerClearCanvasSchema,
 ]);
 export type ServerSocketDataType = z.infer<typeof ServerSocketData>;

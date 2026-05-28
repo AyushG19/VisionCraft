@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { pingAllBackend } from "./api/ping";
-import { useError } from "@repo/hooks";
+import { useError, useToast } from "@repo/hooks";
 
 export function PingProvider() {
   const [loading, setLoading] = useState(true);
   const [showDescription, setShowDescription] = useState(false);
   const textRef = useRef<HTMLDivElement | null>(null);
-  const { setError } = useError();
+  const { setToast } = useToast();
   const intervalIdRef = useRef<ReturnType<typeof setInterval> | undefined>(
     undefined,
   );
@@ -34,7 +34,7 @@ export function PingProvider() {
         if (intervalIdRef.current) clearInterval(intervalIdRef.current);
       })
       .catch((err) => {
-        setError({ code: "SERVER_ERROR", message: err.message });
+        setToast({ title: "Ping error", message: err.message, type: "error" });
       })
       .finally(() => {
         setLoading(false);
@@ -46,7 +46,7 @@ export function PingProvider() {
 
   if (loading)
     return (
-      <div className="absolute top-2 right-2 z-100 min-w-60 max-w-70 h-fit px-6 py-4 rounded-xl bg-easy-blue ouline-1 outline-global-shadow shadow-primary text-canvas-contrast ">
+      <div className="absolute top-2 left-2 z-100 min-w-60 max-w-70 h-fit px-6 py-4 rounded-xl bg-easy-blue ouline-1 outline-global-shadow shadow-primary text-canvas-contrast ">
         <button
           onClick={() => setShowDescription((prev) => !prev)}
           className="inline-flex items-center justify-center italic rounded-full w-4 h-4 outline-1 outline-easy-light-blue  text-white/80 text-xs font-sans mr-2 hover:outline-2 cursor-pointer"

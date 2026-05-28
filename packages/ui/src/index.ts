@@ -23,3 +23,6 @@ export { SideToolkit } from "./components/SideToolkit";
 export { default as ThemeSwitcher } from "./components/ui/ThemeSwitcher";
 export { default as Loader } from "./components/ui/Loader";
 export { default as TextArea } from "./components/ui/TextArea";
+export { default as CanvasPopup } from "./components/CanvasPopup";
+export { default as DynamicCanvas } from "./components/DynamicCanvas";
+export { default as Toast } from "./components/Toast";

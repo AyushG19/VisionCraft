@@ -119,7 +119,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
           onClick={() => toggleFunction()}
           size={"sm"}
           variant={"iconic"}
-          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-red shadow-primary active:shaow-pressed w-20 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-red shadow-pressed button-press w-20 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
         >
           <p>cancel</p>
           {/* <IconX stroke={1.6} className="ml-1" size={18} color="black" /> */}
@@ -127,7 +127,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
         <Button
           onClick={() => handlePaste()}
           variant={"iconic"}
-          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-secondary-700 shadow-primary active:shaow-pressed flex-1 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-secondary-700 shadow-pressed button-press flex-1 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
         >
           <div className="flex items-center gap-1">
             <p>paste</p>
@@ -139,7 +139,7 @@ const CodeInputBox: React.FC<CodeInputBoxProps> = ({
           size={"sm"}
           disabled={!code[3]}
           variant={"iconic"}
-          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-accent shadow-primary active:shaow-pressed w-20 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] hover:cursor-not-allowed"
+          className="outline-1 h-auto font-google-sans-code font-light outline-global-shadow bg-accent shadow-pressed button-press w-20 text-sm items-center justify-center rounded-sm capitalize cursor-pointer p-0 transition-shadow ease-out group scale-100 active:translate-[1px] "
         >
           <p>{isLoading ? "..." : "join"}</p>
           {/* <IconDoorEnter

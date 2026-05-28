@@ -1,6 +1,6 @@
 import {
-  ErrorContextProvider,
   SocketContextProvider,
+  ToastContextProvider,
   UserProvider,
 } from "@repo/hooks";
 import { PingProvider } from "./PingProvider";
@@ -35,12 +35,12 @@ export default function RootLayout({
         className={`overflow-hidden overscroll-none touch-none antialiased`}
       >
         <ThemeProvider>
-          <ErrorContextProvider>
+          <ToastContextProvider>
             <UserProvider>
               <PingProvider />
               <SocketContextProvider>{children}</SocketContextProvider>
             </UserProvider>
-          </ErrorContextProvider>
+          </ToastContextProvider>
         </ThemeProvider>
       </body>
     </html>

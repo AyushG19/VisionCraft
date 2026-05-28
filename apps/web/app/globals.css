@@ -238,11 +238,11 @@
 }
 
 :root {
-  --canvas-bg: #300b43;
-  --primary: #a2d2ff;
-  --primary-700: #c8e4ff;
-  --secondary: #bde0fe;
-  --secondary-700: #d3e9fd;
+  --canvas-bg: #191a26;
+  --primary: #d9ff3a;
+  --primary-700: #dbff4a;
+  --secondary: #ffffff;
+  --secondary-700: #f6f6f6;
   --accent: #5796e7;
   --primary-contrast: #000000;
   --secondary-contrast: #131313;
@@ -279,29 +279,29 @@
   --red: #de0a26;
 }
 :root[data-theme="eyeburn"] {
-  --canvas-bg: #fafafa;
-  --primary: #868686;
-  --primary-700: #a5a5a5;
-  --secondary: #e7e6e6;
-  --secondary-700: #f5f5f5;
+  --canvas-bg: #f5f6eb;
+  --primary: #d0d0d0;
+  --primary-700: #737373;
+  --secondary: #e7e7e7;
+  --secondary-700: #f4f4f4;
   --text: #000000;
   --primary-contrast: #000000;
-  --secondary-contrast: #1f1f1f;
-  --accent: #f3a1d8;
+  --secondary-contrast: #000000;
+  --accent: #b5dad0;
   --global-shadow: #000000;
   --canvas-contrast: #a6f2ff;
   --red: #f01734;
 }
 :root[data-theme="batman"] {
   --canvas-bg: #181818;
-  --secondary: #3f3f3f;
-  --secondary-700: #575757;
-  --primary: #e1e1e1;
-  --primary-700: #f1f1f1;
-  --accent: #ffc321;
+  --primary: #616161;
+  --primary-700: #5c5b5b;
+  --secondary: #e1d7d7;
+  --secondary-700: #f1f1f1;
+  --accent: #fad05f;
   --text: #f7f7f7;
-  --primary-contrast: #040405;
-  --secondary-contrast: #dbd6d6;
+  --secondary-contrast: #040405;
+  --primary-contrast: #ffffff;
   --global-shadow: #000000;
   --canvas-contrast: #a6f2ff;
   --red: #f72a45;
@@ -324,17 +324,11 @@
 @theme {
   --shadow-primary: 5px 5px 0px black;
   --shadow-pressed: 3px 3px 0px black;
-  --shadow-shinyprimary:
-    inset 2px 2px 3px var(--color-primary-700),
-    5px 5px var(--color-global-shadow);
+  --shadow-shinyprimary: 5px 5px var(--color-global-shadow);
 
-  --shadow-shinysecondary:
-    inset 2px 2px 3px var(--color-secondary-700),
-    3px 3px var(--color-global-shadow);
+  --shadow-shinysecondary: 3px 3px var(--color-global-shadow);
 
-  --shadow-shinysecondary-mobile:
-    inset 2px 2px 3px var(--color-secondary-700),
-    2px 2px var(--color-global-shadow);
+  --shadow-shinysecondary-mobile: 2px 2px var(--color-global-shadow);
 
   --shadow-shinysecondary-5:
     inset 2px 2px 3px var(--color-secondary-700),
@@ -408,7 +402,7 @@
   .button-press {
     position: relative;
     transition:
-      box-shadow 60ms linear forwards,
+      box-shadow 10ms linear forwards,
       transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
     &:active {
       box-shadow: var(--shadow-shinyshadow-pressed);

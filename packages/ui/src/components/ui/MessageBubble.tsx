@@ -36,25 +36,23 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   // Base classes
   let base =
-    "w-fit max-w-4/5 px-3 py-2 whitespace-pre-wrap break-words max-w-[80%] font-handlee outline-1 outline-global-shadow rounded-lg";
+    "w-fit max-w-4/5 px-3 py-1 whitespace-pre-wrap break-words max-w-[80%] font-handlee border-1 border-global-shadow rounded-xl";
 
-  // Determine which corners should be “lg” vs which “xs”
   let radiusClasses = "";
 
   if (isOwn) {
-    // for your "own" messages (right side)
     switch (positionInBlock) {
       case "single":
-        radiusClasses = " rounded-br-xs mb-1"; // full rounding with small bottom-right
+        radiusClasses = " rounded-tr-xs mb-1";
         break;
       case "first":
-        radiusClasses = " rounded-br-xs"; // full rounding with small bottom-right
+        radiusClasses = " rounded-tr-xs rounded-br-sm mb-[1px]";
         break;
       case "middle":
-        radiusClasses = " rounded-r-xs "; // small rounding on right side
+        radiusClasses = " rounded-r-sm mb-[1px]";
         break;
       case "last":
-        radiusClasses = " rounded-r-xs mb-1"; // small rounding on top-right only
+        radiusClasses = " rounded-r-sm mb-1";
         break;
     }
     base += " ml-auto bg-[#FCFAED]";
@@ -68,7 +66,7 @@ const MessageBubble = ({
         }}
         className={`${base} ${radiusClasses}`}
       >
-        <div className="relative pb-0.5">
+        <div className="relative py-0.5">
           <p className=" " style={{ lineHeight: "1.2rem" }}>
             {message.content}
             <span className="w-8 inline-block"></span>
@@ -80,26 +78,25 @@ const MessageBubble = ({
       </motion.div>
     );
   } else {
-    // for messages from others (left side)
     switch (positionInBlock) {
       case "single":
-        radiusClasses = " rounded-bl-xs mb-1"; // full rounding with small bottom-left
+        radiusClasses = " rounded-tl-xs mb-1";
         break;
       case "first":
-        radiusClasses = " rounded-bl-xs "; // full rounding with small bottom-left
+        radiusClasses = " rounded-tl-xs rounded-bl-sm mb-[1px] ";
         break;
       case "middle":
-        radiusClasses = " rounded-l-xs "; // small rounding on left side
+        radiusClasses = " rounded-l-sm mb-[1px] ";
         break;
       case "last":
-        radiusClasses = " rounded-l-xs mb-1"; // small rounding on top-left only
+        radiusClasses = " rounded-l-sm mb-1";
         break;
     }
     base += " bg-secondary text-secondary-contrast mr-auto ";
   }
   return (
-    <div className="flex items-end gap-1.5 ">
-      {positionInBlock === "last" || positionInBlock === "single" ? (
+    <div className="flex items-start gap-1.5 ">
+      {positionInBlock === "first" || positionInBlock === "single" ? (
         <div
           className="size-7 rounded-full border flex justify-center items-center capitalize text-xs font-krona-one  "
           style={{ background: color }}
@@ -120,7 +117,7 @@ const MessageBubble = ({
         className={`${base} ${radiusClasses} `}
         // style={{ background: color }}
       >
-        <div className="relative pb-0.5">
+        <div className="relative py-0.5">
           <p className=" " style={{ lineHeight: "1.2rem" }}>
             {message.content}
             <span className="w-8 inline-block"></span>

@@ -97,6 +97,7 @@ export const LinearElementSchema = BaseElementSchema.extend({
   points: z.array(PointSchema),
   startBinding: z.any().optional(),
   endBinding: z.any().optional(),
+  label: LabelSchema.optional(),
   strokeType: z.enum(["dash", "dotted", "normal"]),
 });
 

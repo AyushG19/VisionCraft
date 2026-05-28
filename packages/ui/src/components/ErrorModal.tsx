@@ -24,7 +24,7 @@ export const ErrorModal = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="fixed top-4 right-4 z-[1000] w-80 rounded-xl bg-red-500 text-white shadow-primary flex justify-between p-4 "
+          className="fixed bottom-4 right-4 z-[1000] w-80 rounded-xl bg-red-500 text-white shadow-primary flex justify-between p-4 "
         >
           <div>
             <h3 className="font-semibold">{error.code}</h3>

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import oklchToCSS from "../../utils/colorHelper";
 import { ToolKitType } from "@repo/common";
 
@@ -36,7 +37,7 @@ const TextArea = ({
     <textarea
       autoFocus
       ref={textAreaRef}
-      onBlur={finishText}
+      // onBlur={finishText}
       value={textEditState.text}
       onChange={(e) => setTextEdit({ ...textEditState!, text: e.target.value })}
       onKeyDown={(e) => {

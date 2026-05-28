@@ -48,6 +48,9 @@ const useCanvasInteraction = (
   scheduleRender: () => void,
   activeElementMapRef: React.RefObject<ActiveElementMapType>,
   staticDirtyRef: React.MutableRefObject<boolean>,
+  setSelectedElelmentsForUI: React.Dispatch<
+    React.SetStateAction<DrawElement | undefined>
+  >,
 ): {
   selectedElementsRef: React.RefObject<DrawElement[]>;
   marqueeStateRef: React.RefObject<MarqueeState | null>;
@@ -56,12 +59,17 @@ const useCanvasInteraction = (
   finishText: () => void;
   textEdit: TextEditState;
   setTextEdit: Dispatch<SetStateAction<TextEditState>>;
-  interactionState: React.RefObject<InteractionState>;
+  interactionState: ReturnType<typeof useInteractionState>;
 } => {
   const [textEdit, setTextEdit] = useState<TextEditState>(null);
   const interactionState = useInteractionState();
   const selectedElementsRef = interactionState.tempShapesRef; // DrawElement[]
   const marqueeStateRef = useRef<MarqueeState | null>(null);
+  const textEditRef = useRef<TextEditState>(null);
+
+  useEffect(() => {
+    textEditRef.current = textEdit;
+  }, [textEdit]);
 
   const markStaticDirty = useCallback(() => {
     staticDirtyRef.current = true;
@@ -77,23 +85,28 @@ const useCanvasInteraction = (
   });
 
   const finishText = useCallback(() => {
-    if (!textEdit || !canvasRef.current) return;
+    const currentText = textEditRef.current;
+    if (!currentText || !canvasRef.current) return;
     const textState = canvasState.textState;
     const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
 
     const { width, height } = measureText(
       ctx,
-      textEdit.text,
+      currentText.text,
       textState.fontSize,
       textState.fontFamily,
     );
-    const worldPos = screenToWorld(textEdit.x, textEdit.y, cameraRef.current);
+    const worldPos = screenToWorld(
+      currentText.x,
+      currentText.y,
+      cameraRef.current,
+    );
     const element = createNewText(
       canvasState.toolState,
       textState,
       worldPos,
-      textEdit.text,
+      currentText.text,
       width / cameraRef.current.z,
       height / cameraRef.current.z,
     );
@@ -101,7 +114,7 @@ const useCanvasInteraction = (
     dispatchWithSocket({ type: "ADD_SHAPE", payload: element });
     dispatchWithSocket({ type: "CHANGE_TOOL", payload: "select" });
     setTextEdit(null);
-  }, [textEdit, canvasState.textState, cameraRef, dispatchWithSocket]);
+  }, [canvasState.textState, cameraRef, dispatchWithSocket]);
 
   const cancelText = useCallback(() => setTextEdit(null), []);
 
@@ -199,6 +212,9 @@ const useCanvasInteraction = (
     };
 
     const onMouseDown = (e: MouseEvent) => {
+      e.stopPropagation();
+      if (textAreaRef.current) finishText();
+
       const pos = getMousePosOnWorld(
         canvas,
         { x: e.clientX, y: e.clientY },
@@ -228,11 +244,16 @@ const useCanvasInteraction = (
 
         if (next.length === 0 && prev.length > 0) {
           sendActiveElementUpdate({ type: "DESELECT", payload: {} });
+          prev.forEach((e) => {
+            dispatchWithSocket({ type: "ADD_SHAPE", payload: e });
+          });
+          setSelectedElelmentsForUI(undefined);
         } else if (next.length > 0) {
           // if (!e.shiftKey)
           //   sendActiveElementUpdate({ type: "DRAG", payload: next });
           sendActiveElementUpdate({ type: "DRAG", payload: next });
           dispatchWithSocket({ type: "UPD_SHAPE", payload: next });
+          setSelectedElelmentsForUI(next[0]);
         }
 
         markStaticDirty();
@@ -240,7 +261,7 @@ const useCanvasInteraction = (
       }
 
       if (tool === "text") {
-        // textAreaRef.current?.blur();
+        console.log(textEdit, textAreaRef.current);
         const canvasPos = getMousePos(canvasRef, {
           x: e.clientX,
           y: e.clientY,
@@ -324,6 +345,9 @@ const useCanvasInteraction = (
 
         case "hand": {
           onPanMove(e);
+          break;
+        }
+        case "text": {
           break;
         }
 
@@ -432,6 +456,12 @@ const useCanvasInteraction = (
           onPanEnd();
           break;
         }
+        case "text": {
+          e.preventDefault();
+          e.stopPropagation();
+          textAreaRef.current?.focus();
+          break;
+        }
 
         case "eraser": {
           const ids = interactionState.eraseStateRef.current.elementsToDelete;
@@ -466,8 +496,10 @@ const useCanvasInteraction = (
           break;
         }
       }
+      console.log(textEdit, textAreaRef.current);
 
       if (canvasStateRef.current.toolState.currentTool !== "select") {
+        console.log(tool);
         canvasDispatch({ type: "CHANGE_TOOL", payload: "select" });
       }
     };
@@ -537,7 +569,7 @@ const useCanvasInteraction = (
     finishText,
     textEdit,
     setTextEdit,
-    interactionState: interactionState.interaction,
+    interactionState,
   };
 };
 

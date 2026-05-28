@@ -214,6 +214,17 @@ export const drawShape = (
         { x: shape.startX, y: shape.startY },
         shape.strokeColor,
       );
+      if (shape.label) {
+        drawLabel(
+          ctx,
+          {
+            x: shape.startX + shape.points[1]!.x,
+            y: shape.startY + shape.points[1]!.y,
+          },
+          shape.label,
+          shape.points[2]!.x,
+        );
+      }
     } else if (type === "ellipse") {
       const width = shape.endX - shape.startX;
       const height = shape.endY - shape.startY;

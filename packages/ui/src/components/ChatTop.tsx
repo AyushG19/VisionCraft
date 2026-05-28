@@ -1,4 +1,4 @@
-import { IconCheck, IconChevronLeft, IconCopy } from "@tabler/icons-react";
+import { IconCheck, IconChevronRight, IconCopy } from "@tabler/icons-react";
 import AvatarGroup from "./ui/AvatarGroup";
 import { useState } from "react";
 import { UserInfo } from "@repo/hooks";
@@ -36,9 +36,9 @@ const ChatTop = ({
         onClick={() => handleChatToggle()}
         variant={"outline"}
         size={"sm"}
-        className="absolute p-0 top-0 left-0 z-30 m-2 aspect-square"
+        className="absolute p-0 top-0 left-0 z-30 m-2 aspect-square bg-primary h-10"
       >
-        <IconChevronLeft />
+        <IconChevronRight />
       </Button>
     );
   return (
@@ -54,7 +54,7 @@ const ChatTop = ({
           size={"sm"}
           className=" z-30 mr-4 h-12 w-fit px-1 py-0 flex-start"
         >
-          <IconChevronLeft />
+          <IconChevronRight />
         </Button>
         {/* <div className=""> */}
         {/* <div

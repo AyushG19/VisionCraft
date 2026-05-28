@@ -128,3 +128,23 @@ export type ActiveElementMapType = Map<
   string,
   { isDirty: boolean; userId: string; element: DrawElement }
 >;
+export type AIResultType = Extract<
+  DrawElement,
+  {
+    type: "arrow" | "rectangle" | "ellipse" | "diamond" | "text";
+  }
+>;
+
+export type DiagramBounds = {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+};
+
+export type Transform = {
+  bounds: DiagramBounds;
+  scale: number;
+  targetX: number;
+  targetY: number;
+};
