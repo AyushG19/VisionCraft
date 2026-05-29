@@ -274,6 +274,30 @@ export const useSocketWithWhiteboard = () => {
     });
   };
 
+  const updateMessage = (
+    content: string,
+    name: string,
+    suggestions?: string[],
+  ) => {
+    let message = content;
+    if (suggestions && suggestions?.length > 0) {
+      message =
+        message +
+        "\n\n Some further suggestions:" +
+        suggestions.map((s, i) => `\n\n${i + 1}•${s}`).join(".");
+    }
+    const createMessage = (message: string): ServerMessageType => ({
+      content: message,
+      name,
+      sender_id: crypto.randomUUID(),
+      timeStamp_ms: Date.now(),
+    });
+    // const fullMess = [createMessage(content)];
+    // if (suggestions && suggestions.length > 0)
+    //   fullMess.push(...suggestions.map((s) => ({ ...createMessage(s) })));
+    setMessages((prev) => [...prev, createMessage(message)]);
+  };
+
   const handleColorSelect = (
     color: { l: number; c: number; h: number },
     shape?: ShapeType | LinearType | PencilType,
@@ -436,5 +460,6 @@ export const useSocketWithWhiteboard = () => {
     users: roomInfo.users,
     selectedElementForUI,
     ConvertAndCenterGroupToScreenMiddle,
+    updateMessage,
   };
 };

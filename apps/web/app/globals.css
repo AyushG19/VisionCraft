@@ -240,10 +240,10 @@
 :root {
   --canvas-bg: #191a26;
   --primary: #d9ff3a;
-  --primary-700: #dbff4a;
+  --primary-700: #e6ff84;
   --secondary: #ffffff;
   --secondary-700: #f6f6f6;
-  --accent: #5796e7;
+  --accent: #a2cbff;
   --primary-contrast: #000000;
   --secondary-contrast: #131313;
   --global-shadow: #000000;
@@ -307,20 +307,31 @@
   --red: #f72a45;
 }
 :root[data-theme="lowsun"] {
-  --canvas-bg: #24150f;
-  --primary: #85431e;
-  --primary-700: #92502a;
-  --secondary: #d39858;
-  --secondary-700: #eeb06e;
-  --accent: #7ecaf7;
+  --canvas-bg: #331233;
+  --primary: #e45e32;
+  --primary-700: #e66b43;
+  --secondary: #fbca69;
+  --secondary-700: #ffd787;
+  --accent: #e8d9ce;
   --text: #000000;
-  --primary-contrast: #eeddc6;
+  --primary-contrast: #ffe3b3;
   --secondary-contrast: #000000;
   --global-shadow: #150c0c;
   --canvas-contrast: #a6f2ff;
-  --red: #ff0325;
+  --red: #920004;
 }
-
+/*Cultured
+  #F6F4F5
+  Malted
+  Milk
+  Sunspark
+  Red
+  Clay
+  Witch
+  Soup
+  #692746
+  Cultist
+  Robe*/
 @theme {
   --shadow-primary: 5px 5px 0px black;
   --shadow-pressed: 3px 3px 0px black;
@@ -374,31 +385,6 @@
 }
 
 @layer utilities {
-  /* .outline-personal {
-    @apply outline outline-black;
-  } */
-  /* .border-personal {
-    @apply border border-black;
-  } */
-  /* .shadow-primary {
-    box-shadow: 5px 5px 0px black;
-  }
-  .shadow-pressed {
-    box-shadow: 2px 2px 0px black;
-  } */
-  /* .button-press-active:active {
-    @apply relative overflow-clip
-    transition-shadow duration-100 ease-in-out
-    shadow-shinyshadow-pressed
-    after:content-['']
-    after:absolute
-    after:inset-0
-    after:w-full
-    after:h-full
-    after:rounded-md
-    after:bg-primary
-    after:opacity-20;
-  } */
   .button-press {
     position: relative;
     transition:
@@ -424,27 +410,6 @@
     opacity: 30%;
   }
 }
-
-/* @layer utility {
-  .button-press {
-    position: relative;
-    overflow: clip;
-    box-shadow: var(
-      --shadow-shinyshadow-pressed
-    );
-    transition:
-      box-shadow 60ms linear,
-      transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    &:active {
-      box-shadow: var(--shadow-shinyshadow-pressed);
-      transform: scale(0.97) translateY(1px);
-      transition:
-        box-shadow 60ms linear,
-        transform 60ms linear;
-    }
-  }
-} */
 
 @keyframes fade {
   0% {

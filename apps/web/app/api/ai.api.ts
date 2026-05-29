@@ -1,12 +1,19 @@
+import { DrawElement } from "@repo/common";
 import { axiosInstance } from "./axios";
 
-export async function fetchMermaidPrompt(userPrompt: string): Promise<string> {
+export async function fetchMermaidPrompt(
+  userPrompt: string,
+  context: DrawElement[],
+): Promise<{ flowchart: string; message: string; suggestions: string[] }> {
   const res = await axiosInstance.post(
     "/api/ai/draw",
     {
-      userCommand: userPrompt,
+      instruction: userPrompt,
+      context: context,
     },
     { timeout: 120_000 },
   );
-  return res.data.res;
+  console.log("mermaid prompt:", res.data.res);
+  const data = await JSON.parse(res.data.res);
+  return data;
 }

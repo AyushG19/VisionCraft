@@ -1,5 +1,5 @@
 import { DrawElement } from "@repo/common";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 const DynamicCanvas = ({
   draw,
@@ -21,23 +21,29 @@ const DynamicCanvas = ({
     height: number;
   } | null;
 }) => {
-  const popupCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  useEffect(() => {
-    const canvas = popupCanvasRef.current;
-    if (elements.length === 0 || !canvas) return;
+  const canvasRefCallback = useCallback(
+    (canvas: HTMLCanvasElement | null) => {
+      if (!canvas || elements.length === 0) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const size = getSize(elements);
+      if (!size) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const padding = 40;
+      canvas.width = size.width + padding;
+      canvas.height = size.height + padding;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const size = getSize(elements);
-    if (!size) return;
-    canvas.width = size.width + 10;
-    canvas.height = size.height + 20;
+      const offsetX = -size.x + padding / 2;
+      const offsetY = -size.y + padding / 2;
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      elements.forEach((e) => draw(ctx, e, { x: 0, y: 0, z: 1 }, false));
+      ctx.restore();
+    },
+    [elements, draw, getSize],
+  );
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    elements.forEach((e) => draw(ctx, e, { x: 1, y: 1, z: 1 }, false));
-  }, [elements]);
-  return <canvas className="m-auto block" ref={popupCanvasRef} />;
+  return <canvas className="m-auto block" ref={canvasRefCallback} />;
 };
 export default DynamicCanvas;

@@ -19,13 +19,13 @@ const Toast = () => {
   const getColor = (type: ToastType["type"]): string => {
     switch (type) {
       case "error":
-        return "bg-red";
+        return "bg-red text-white";
       case "info":
-        return "bg-accent";
+        return "bg-accent text-black";
       case "success":
-        return "bg-green-500";
+        return "bg-green-500 text-black";
       case "warn":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-black";
       case "none":
         return "";
     }
@@ -39,7 +39,7 @@ const Toast = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className={`fixed bottom-4 right-4 z-[1000] w-80 rounded-xl  text-white shadow-primary flex justify-between p-4 ${getColor(toast.type)}`}
+          className={`fixed bottom-4 right-4 z-[1000] w-80 rounded-xl border-1 border-global-shadow shadow-primary flex justify-between p-4 ${getColor(toast.type)}`}
         >
           <div>
             <h3 className="font-semibold capitalize font-krona-one">

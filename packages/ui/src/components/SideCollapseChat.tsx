@@ -53,29 +53,29 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
       }
       const { userId, name } = currentUser;
 
+      if (content.startsWith("/draw")) {
+        const command = content.replace("/draw", "").trim();
+        content = content.replace("/draw", "BOBO draw");
+        fetchChartFromAi(command);
+        // .then((reply) => {
+        //   const llmReply: ServerMessageType = {
+        //     content: reply,
+        //     name: "bobo",
+        //     sender_id: crypto.randomUUID(),
+        //     timeStamp_ms: Date.now(),
+        //   };
+        //   setMessages((prev) => [...prev, llmReply]);
+        // });
+        // setInputText("");
+        // return;
+      }
+
       const userMessage: ServerMessageType = {
         sender_id: userId,
         name: name,
         timeStamp_ms: Date.now(),
         content: content,
       };
-
-      if (content.startsWith("/draw")) {
-        const command = content.replace("/draw", "").trim();
-        fetchChartFromAi(command).then((reply) => {
-          const llmReply: ServerMessageType = {
-            content: reply,
-            name: "bobo",
-            sender_id: crypto.randomUUID(),
-            timeStamp_ms: Date.now(),
-          };
-          setMessages((prev) => [...prev, llmReply]);
-        });
-        setMessages((prev) => [...prev, userMessage]);
-        setInputText("");
-        return;
-      }
-
       setMessages((prev) => [...prev, userMessage]);
 
       if (inRoom) {
@@ -193,7 +193,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
                 onClick={handleShowOption}
                 aria-label="command"
                 variant={"outline"}
-                className="h-full p-1 aspect-square  rounded-md cursor-pointer text-primary-contrast hover:bg-accent flex items-center justify-center transition-colors"
+                className="h-full p-1 aspect-square  rounded-md cursor-pointer text-primary-contrast hover:bg-accent flex items-center justify-center transition-colors button-press scale-100"
               >
                 {isLoading ? (
                   <Loader />
@@ -219,9 +219,14 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
                 }}
                 disabled={!isOpen}
                 variant={"secondary"}
-                className="translate-x-0 rounded-lg aspect-square p-0 h-full items-center justify-center flex shadow-shinyshadow button-press-active transition-all ease-in disabled:opacity-50 text-secondary-contrast hover:text-accent outline-1 outline-global-shadow"
+                className="translate-x-0 rounded-lg aspect-square p-0 h-full items-center justify-center flex shadow-shinyshadow button-press-active transition-all ease-in disabled:opacity-50 text-secondary-contrast hover:text-accent outline-1 outline-global-shadow button-press scale-100"
               >
-                <IconSend2 fill="currentColor" size={18} stroke={1} />
+                <IconSend2
+                  fill="currentColor"
+                  color="currentColor"
+                  size={18}
+                  stroke={1}
+                />
               </Button>
             </div>
           </motion.div>

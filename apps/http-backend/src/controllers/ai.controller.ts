@@ -144,20 +144,20 @@ function isValidMermaid(src: any) {
 }
 export async function fetchMermaidSyntax(req: Request, res: Response) {
   try {
-    const { userCommand } = req.body;
-    const MERMAID_PROMPT = getMermaidPrompt(userCommand);
+    const { instruction, context } = req.body;
+    const MERMAID_PROMPT = getMermaidPrompt(instruction, context);
 
     const result = await gemini.models.generateContent({
-      model: env.MODEL, // Ensure you use a supported model
+      model: env.MODEL,
       contents: [{ role: "user", parts: [{ text: MERMAID_PROMPT }] }],
     });
     if (!result.text) throw new AppError(500, "No syntax found");
     console.log(result.text);
-    const mermaid = extractMermaidBlock(result.text);
-    if (!isValidMermaid(mermaid)) {
-      throw new AppError(500, "Invalid Syntax");
-    }
-    res.status(200).json({ res: mermaid });
+    // const mermaid = extractMermaidBlock(result.text);
+    // if (!isValidMermaid(mermaid)) {
+    //   throw new AppError(500, "Invalid Syntax");
+    // }
+    res.status(200).json({ res: result.text });
   } catch (error: any) {
     console.error("Error:", error.response?.data || error.message);
     res

@@ -29,11 +29,16 @@ const useAi = (
         elements: ExcalidrawElementSkeleton[],
         camera: Camera,
       ) => AIResultType[],
+      updateMessages: (
+        message: string,
+        name: string,
+        suggestions?: string[],
+      ) => void,
     ) => {
       setLoading(true);
       try {
-        const elements = await getExcalidrawElements(userCommand, 20);
-        console.log("elements:", elements);
+        const aiRes = await getExcalidrawElements(userCommand, 20);
+        console.log("elements:", aiRes);
         // const sf = getScalingFactor(elements);
         // console.log(sf);
 
@@ -60,9 +65,11 @@ const useAi = (
         //     convertToShapeType(ctx, fontFamily, element, transform),
         //   ),
         // );
-        setResult([...centerElements(elements, camera)]);
+        setResult([...centerElements(aiRes.elements, camera)]);
+        updateMessages(aiRes.message, "BOBO", aiRes.suggestions);
         // centerElement[...convertAllElements(elements,fontFamily)]);
       } catch (error) {
+        console.error(error);
         setToast({
           title: "Broken LLM!",
           //@ts-ignore

@@ -102,7 +102,7 @@ export const highlightShape = (
   ctx.beginPath();
   ctx.strokeStyle = highlightColor;
   ctx.lineWidth = 1 / zoom;
-  bounds.type === "marquee" && ctx.setLineDash([6 / zoom, 2 / zoom]);
+  if (bounds.type === "marquee") ctx.setLineDash([6 / zoom, 2 / zoom]);
 
   // if (bounds.type === "marquee" || bounds.type === "rect") {
   if (bounds.type === "points") {
@@ -215,6 +215,7 @@ export const drawShape = (
         shape.strokeColor,
       );
       if (shape.label) {
+        ctx.fillStyle = oklchToCSS(shape.strokeColor);
         drawLabel(
           ctx,
           {

@@ -3,9 +3,9 @@
 const THEMES = [
   {
     name: "default",
-    canvas: "#300b43",
-    primary: "#a2d2ff",
-    secondary: "#bde0fe",
+    canvas: "#191a26",
+    primary: "#d9ff3a",
+    secondary: "#ffffff",
   },
   {
     name: "terra",
@@ -33,9 +33,9 @@ const THEMES = [
   },
   {
     name: "lowsun",
-    canvas: "#24150f",
-    primary: "#85431e",
-    secondary: "#d39858",
+    canvas: "#331233",
+    primary: "#e45e32",
+    secondary: "#fbca69",
   },
 ] as const;
 

@@ -1,8 +1,8 @@
 export type selected = "draw" | "ask";
 
 const OPTIONS: { name: selected; desc: string }[] = [
-  { name: "draw", desc: "tell AI to draw something." },
-  { name: "ask", desc: "ask AI about something." },
+  { name: "draw", desc: "Make BOBO create a flowchart" },
+  { name: "ask", desc: "Ask BOBO about something" },
 ];
 const OptionModal = ({
   open,
@@ -14,17 +14,21 @@ const OptionModal = ({
   return (
     <div
       id="option"
-      className={` absolute bg-primary border-t bottom-0 transform  left-0 w-full h-auto rounded-t-md transition-transform duration-300 text-sm ${open ? "translate-y-0" : "translate-y-full"} `}
+      className={` absolute bg-primary border-t bottom-0 transform pt-1 left-0 w-full h-auto rounded-t-md transition-transform duration-300 text-sm ${open ? "translate-y-0" : "translate-y-full"} `}
     >
       <ul>
         {OPTIONS.map((ob, i) => (
           <li
             key={ob.name}
-            className={`px-4 py-2 font-semibold font-google-sans-code even:bg-primary-700 hover:bg-secondary transition-colors ease-in-out duration-200 cursor-pointer capitalize flex justify-between gap-3 hover:bg-light_sky_blue-700 rounded-md `}
+            className={`px-2 py-1 font-google-sans-code hover:bg-primary-700 transition-colors ease-in-out duration-200 cursor-pointer flex justify-between items-center gap-3 rounded-md `}
             onClick={() => handleOptionSelect(ob.name)}
           >
-            /{ob.name}
-            <span className="font-handlee text-sm font-normal ">{ob.desc}</span>
+            <span className="bg-primary-700 text-xs px-2 py-1 rounded-sm">
+              /{ob.name}
+            </span>
+            <p className="font-sans text-xs font-normal text-center color-primary-contrast">
+              {ob.desc}
+            </p>
           </li>
         ))}
       </ul>

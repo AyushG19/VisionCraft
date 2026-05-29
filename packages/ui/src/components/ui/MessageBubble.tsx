@@ -36,7 +36,7 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   // Base classes
   let base =
-    "w-fit max-w-4/5 px-3 py-1 whitespace-pre-wrap break-words max-w-[80%] font-handlee border-1 border-global-shadow rounded-xl";
+    "w-fit max-w-3/5 px-3 py-1 whitespace-pre-wrap break-words max-w-[80%] font-handlee border-1 border-global-shadow rounded-xl";
 
   let radiusClasses = "";
 
