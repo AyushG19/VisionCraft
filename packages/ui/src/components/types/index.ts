@@ -1,4 +1,8 @@
-import { ClientSocketDataType, ServerMessageType } from "@repo/common";
+import {
+  ClientSocketDataType,
+  QueryType,
+  ServerMessageType,
+} from "@repo/common";
 
 type sendType = Extract<
   ClientSocketDataType,
@@ -9,7 +13,7 @@ export type SideChatPropsType = {
   send: (type: sendType["type"], payload: sendType["payload"]) => void;
   messages: ServerMessageType[];
   setMessages: React.Dispatch<React.SetStateAction<ServerMessageType[]>>;
-  fetchChartFromAi: (userCommand: string) => Promise<string>;
+  fetchFromAi: (userCommand: string, queryType: QueryType) => Promise<void>;
   isOpen: boolean;
   isLoading: boolean;
   slug: string;

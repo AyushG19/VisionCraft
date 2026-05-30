@@ -36,7 +36,7 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   // Base classes
   let base =
-    "w-fit max-w-3/5 px-3 py-1 whitespace-pre-wrap break-words max-w-[80%] font-handlee border-1 border-global-shadow rounded-xl";
+    "w-fit max-w-3/5 px-3 py-1 whitespace-pre-wrap break-words max-w-[80%] font-handlee border-1 border-global-shadow rounded-xl relative";
 
   let radiusClasses = "";
 
@@ -64,8 +64,23 @@ const MessageBubble = ({
           duration: 0.2,
           ease: "easeOut",
         }}
-        className={`${base} ${radiusClasses}`}
+        className={`${base} ${radiusClasses} mr-[9px]`}
       >
+        {(positionInBlock === "first" || positionInBlock === "single") && (
+          <svg
+            width="9"
+            height="9"
+            className="absolute -top-[1px] -right-2 text-secondary z-10"
+            viewBox="0 0 8 8"
+            shapeRendering="crispEdges"
+          >
+            <polygon points="0,0 8,0 0,8" fill="currentColor" stroke="none" />
+            {/* Top edge */}
+            <line x1="0" y1="0" x2="8" y2="0" stroke="black" strokeWidth="1" />
+            {/* Diagonal edge */}
+            <line x1="8" y1="0" x2="1" y2="7" stroke="black" strokeWidth="1" />
+          </svg>
+        )}
         <div className="relative py-0.5">
           <p className=" " style={{ lineHeight: "1.2rem" }}>
             {message.content}
@@ -114,9 +129,39 @@ const MessageBubble = ({
           duration: 0.2,
           ease: "easeOut",
         }}
-        className={`${base} ${radiusClasses} `}
+        className={`${base} ${radiusClasses}  `}
         // style={{ background: color }}
       >
+        {positionInBlock === "first" ||
+          (positionInBlock === "single" && (
+            <svg
+              width="9"
+              height="9"
+              className="absolute -top-[1px] -left-2 text-secondary z-10"
+              viewBox="0 0 8 8"
+              shapeRendering="crispEdges"
+            >
+              <polygon points="0,0 8,0 8,8" fill="currentColor" stroke="none" />
+              {/* Top edge */}
+              <line
+                x1="0"
+                y1="0"
+                x2="8"
+                y2="0"
+                stroke="black"
+                strokeWidth="1"
+              />
+              {/* Diagonal edge */}
+              <line
+                x1="0"
+                y1="0"
+                x2="7"
+                y2="7"
+                stroke="black"
+                strokeWidth="1"
+              />
+            </svg>
+          ))}
         <div className="relative py-0.5">
           <p className=" " style={{ lineHeight: "1.2rem" }}>
             {message.content}

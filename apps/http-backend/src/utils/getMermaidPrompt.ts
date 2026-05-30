@@ -2,7 +2,8 @@
 // Role:
 // You are an expert in Mermaid.js syntax.
 
-import { DrawElement } from "@repo/common";
+import { Type } from "@google/genai";
+import { DrawElement, QueryType, AiContext } from "@repo/common";
 
 // Task:
 // Convert the user's description into valid Mermaid syntax code output ONLY the code, starting with graph TD, using this schema.
@@ -43,6 +44,102 @@ import { DrawElement } from "@repo/common";
 // Now, with the rules in mind, perform the instruction below.
 // ${userRequest}
 // `;
+// ai/schema.ts
+
+const messageField = {
+  type: Type.STRING,
+  description:
+    "Clear, UI-friendly explanation of what was done or answered. Can be multiple sentences.",
+};
+
+const flowchartField = {
+  type: Type.STRING,
+  description:
+    "Valid Mermaid flowchart syntax starting with 'flowchart TD' or 'flowchart LR'. No markdown fences.",
+};
+
+const suggestionsField = {
+  type: Type.ARRAY,
+  items: { type: Type.STRING },
+  description:
+    "2-4 concise actionable follow-up suggestions (5-15 words each).",
+};
+
+export const getSchema = (type: QueryType) => {
+  switch (type) {
+    case "create":
+    case "edit":
+    case "add":
+      return {
+        type: Type.OBJECT,
+        properties: {
+          message: messageField,
+          flowchart: flowchartField,
+          suggestions: suggestionsField,
+        },
+        required: ["message", "flowchart", "suggestions"],
+      };
+
+    case "tell":
+      return {
+        type: Type.OBJECT,
+        properties: {
+          message: messageField,
+          suggestions: {
+            ...suggestionsField,
+            description: "Optional follow-up questions if applicable.",
+          },
+        },
+        required: ["message"],
+      };
+  }
+};
+
+const SYSTEM_CONTEXT = `
+You are an expert in Mermaid.js flowchart syntax and UX-friendly explanation writing.
+Rules:
+- flowchart field must start with "flowchart TD" or "flowchart LR" only.
+- Use valid Mermaid flowchart syntax only — no sequenceDiagram, erDiagram, stateDiagram.
+- Nodes: [rect] (round) ([stadium]) [[subroutine]] [(database)] {decision?}
+- Edges: --> --- -.-> ==>
+- message must be plain English, UI-friendly, no technical jargon.
+- suggestions must be short actionable phrases (5-15 words each).
+`.trim();
+
+const CONTEXT_SHAPE_MAP = `
+Shape type mapping for context:
+rect       -> [Label]
+round      -> (Label)
+stadium    -> ([Label])
+subroutine -> [[Label]]
+database   -> [(Label)]
+decision   -> {Label?}
+`.trim();
+
+const intentMap: Record<QueryType, string> = {
+  create:
+    "Create a new Mermaid flowchart from scratch based on the user description.",
+  edit: "Modify the existing flowchart according to the user instruction. Preserve unchanged parts.",
+  add: "Extend the existing flowchart by adding new nodes or connections as described.",
+  tell: "Answer the user's question about flowcharts or the current diagram. Do not generate a new flowchart unless explicitly asked.",
+};
+
+export const buildPrompt = (
+  type: QueryType,
+  userQuery: string,
+  context?: AiContext,
+): string => {
+  const parts: string[] = [SYSTEM_CONTEXT, `\nIntent: ${intentMap[type]}`];
+
+  if (context?.length) {
+    parts.push(`\n${CONTEXT_SHAPE_MAP}`);
+    parts.push(`\nCurrent canvas shapes:\n${JSON.stringify(context, null, 2)}`);
+  }
+
+  parts.push(`\nUser instruction: ${userQuery}`);
+
+  return parts.join("\n");
+};
 
 export const getMermaidPrompt = (
   instruction: string,

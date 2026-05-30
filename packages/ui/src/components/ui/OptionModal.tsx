@@ -1,15 +1,19 @@
+import { QueryType } from "@repo/common";
+
 export type selected = "draw" | "ask";
 
-const OPTIONS: { name: selected; desc: string }[] = [
-  { name: "draw", desc: "Make BOBO create a flowchart" },
-  { name: "ask", desc: "Ask BOBO about something" },
+const OPTIONS: { name: QueryType; desc: string }[] = [
+  { name: "create", desc: "Make BOBO create a flowchart" },
+  { name: "tell", desc: "Ask BOBO about something" },
+  { name: "edit", desc: "Tell BOBO to do some changes" },
+  { name: "add", desc: "Try to add to exixting,with BOBO" },
 ];
 const OptionModal = ({
   open,
   handleOptionSelect,
 }: {
   open: boolean;
-  handleOptionSelect: (option: selected) => void;
+  handleOptionSelect: (option: QueryType) => void;
 }) => {
   return (
     <div
@@ -24,7 +28,7 @@ const OptionModal = ({
             onClick={() => handleOptionSelect(ob.name)}
           >
             <span className="bg-primary-700 text-xs px-2 py-1 rounded-sm">
-              /{ob.name}
+              {ob.name}
             </span>
             <p className="font-sans text-xs font-normal text-center color-primary-contrast">
               {ob.desc}

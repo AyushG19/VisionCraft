@@ -1,19 +1,21 @@
-import { DrawElement } from "@repo/common";
+import { AiResponse, DrawElement, QueryType } from "@repo/common";
 import { axiosInstance } from "./axios";
 
 export async function fetchMermaidPrompt(
-  userPrompt: string,
+  instruction: string,
+  queryType: QueryType,
   context: DrawElement[],
-): Promise<{ flowchart: string; message: string; suggestions: string[] }> {
+): Promise<AiResponse> {
   const res = await axiosInstance.post(
-    "/api/ai/draw",
+    "/api/ai/query",
     {
-      instruction: userPrompt,
-      context: context,
+      instruction,
+      context,
+      queryType,
     },
     { timeout: 120_000 },
   );
-  console.log("mermaid prompt:", res.data.res);
+  console.log("backend ai res: ", res.data.res);
   const data = await JSON.parse(res.data.res);
   return data;
 }

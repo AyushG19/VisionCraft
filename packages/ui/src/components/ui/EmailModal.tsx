@@ -120,14 +120,7 @@ const EmailModal = ({
       setStage((prev) => (prev + 1) % 4);
     }
   };
-  const handleClickOrKey = (
-    e: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
-  ) => {
-    e.stopPropagation();
-    if (e instanceof KeyboardEvent && e.key !== "Enter") return;
 
-    handleNextOrsubmit();
-  };
   return (
     <div>
       <div className="relative w-full lg:w-110">
@@ -149,7 +142,11 @@ const EmailModal = ({
                       ? "password"
                       : ""
                   }
-                  onKeyDown={handleClickOrKey}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key !== "Enter") return;
+                    handleNextOrsubmit();
+                  }}
                   value={currStage.state}
                   onInput={(e) => currStage.setState(e.currentTarget.value)}
                   placeholder={currStage?.placeholder}
@@ -157,7 +154,10 @@ const EmailModal = ({
                 ></Input>
               )}
               <Button
-                onClick={handleClickOrKey}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextOrsubmit();
+                }}
                 className="w-16 -ml-4  bg-easy-purple-muted text-easy-bg shadow-shinyprimary"
                 variant={"iconic"}
                 size={"xl"}

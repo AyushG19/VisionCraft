@@ -1,6 +1,9 @@
 "use client";
 import { useCallback, useState } from "react";
-import { getExcalidrawElements } from "../../services/ai.service";
+import {
+  getAiResponse,
+  getExcalidrawElements,
+} from "../../services/ai.service";
 import { AIResultType } from "@workspace/ui/lib/convertToShapeType";
 import { useToast } from "@repo/hooks";
 
@@ -8,12 +11,11 @@ import { convertAllElements } from "../utils/elementsConverter";
 import { Action } from "../types";
 import { Camera } from "./useCamera";
 import { createDraggedGroup } from "../utils/createTempShapeHelper";
-import { DrawElement } from "@repo/common";
+import { DrawElement, QueryType } from "@repo/common";
 import { ExcalidrawElementSkeleton } from "@workspace/ui/components/types";
 
 const useAi = (
-  canvas: React.RefObject<HTMLCanvasElement | null>,
-  canvasDispatch: React.Dispatch<Action>,
+  selectedElementRef: React.RefObject<DrawElement[]>,
   camera: Camera,
 ) => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -22,8 +24,6 @@ const useAi = (
 
   const handleDrawRequest = useCallback(
     async (
-      ctx: CanvasRenderingContext2D,
-      fontFamily: string,
       userCommand: string,
       centerElements: (
         elements: ExcalidrawElementSkeleton[],
@@ -34,40 +34,23 @@ const useAi = (
         name: string,
         suggestions?: string[],
       ) => void,
+      queryType: QueryType,
+      fontSize: number = 10,
     ) => {
       setLoading(true);
       try {
-        const aiRes = await getExcalidrawElements(userCommand, 20);
+        const context = selectedElementRef.current;
+
+        const aiRes = await getExcalidrawElements(
+          userCommand,
+          queryType,
+          fontSize,
+          context,
+        );
         console.log("elements:", aiRes);
-        // const sf = getScalingFactor(elements);
-        // console.log(sf);
 
-        // 2. Find the physical center of the user's monitor
-        // const screenMiddleX = window.innerWidth / 2;
-        // const screenMiddleY = window.innerHeight / 2;
-
-        // const worldPos = screenToWorld(screenMiddleX, 120, camera);
-        // const bounds = getDiagramBounds(elements);
-
-        // const scale = getScaleFactor(bounds);
-
-        // const transform = createTransform(
-        //   bounds,
-        //   scale,
-        //   worldPos.x,
-        //   worldPos.y,
-        // );
-        // console.log("bounds:", bounds);
-        // console.log("scale:", scale);
-        // console.log("transform:", transform);
-        // setResult(
-        //   elements.map((element) =>
-        //     convertToShapeType(ctx, fontFamily, element, transform),
-        //   ),
-        // );
         setResult([...centerElements(aiRes.elements, camera)]);
         updateMessages(aiRes.message, "BOBO", aiRes.suggestions);
-        // centerElement[...convertAllElements(elements,fontFamily)]);
       } catch (error) {
         console.error(error);
         setToast({
@@ -84,23 +67,33 @@ const useAi = (
     [],
   );
 
-  const handleChatRequest = async (userCommand: string) => {
-    // setLoading(true);
-    // try {
-    //   const elements = await getExcalidrawElements(userCommand);
-    //   // conversion to my local types
-    //   setResult(() => elements.map((element) => convertToShapeType(element)));
-    // } catch (error) {
-    //   setError({ code: "SERVER_ERROR", message: "Errorn with AI" });
-    //   setLoading(false);
-    // } finally {
-    //   setLoading(false);
-    // }
+  const handleChatRequest = async (
+    userCommand: string,
+    updateMessages: (
+      message: string,
+      name: string,
+      suggestions?: string[],
+    ) => void,
+    queryType: QueryType,
+  ) => {
+    setLoading(true);
+    try {
+      const context = selectedElementRef.current;
+      const { message } = await getAiResponse(userCommand, queryType, context);
+      // conversion to my local types
+      updateMessages(message, "BOBO");
+    } catch (error) {
+      setToast({
+        title: "Woah! AI chocked!",
+        message: "Try again please.",
+        type: "error",
+      });
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // const handleDiagramAccept = (ctx: CanvasRenderingContext2D) => {
-  //   dispatchwithsocket({});
-  // };
   return { loading, result, handleDrawRequest, handleChatRequest };
 };
 

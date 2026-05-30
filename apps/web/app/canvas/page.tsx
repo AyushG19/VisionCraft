@@ -23,7 +23,7 @@ import { drawShape } from "./utils/drawing";
 import { getGroupOutlineBounds } from "./utils/getBoundsHelpers";
 import { ExcalidrawElementSkeleton } from "@workspace/ui/components/types";
 import { AIResultType } from "./types";
-import { DrawElement } from "@repo/common";
+import { DrawElement, QueryType } from "@repo/common";
 import { convertAllElements } from "./utils/elementsConverter";
 import { createDraggedGroup } from "./utils/createTempShapeHelper";
 
@@ -269,27 +269,33 @@ const Page = () => {
   const { currentUser, setCurrentUser } = useUser();
   const wb = useSocketWithWhiteboard();
 
-  const { loading, result, handleDrawRequest } = useAi(
-    wb.canvasRef,
-    wb.canvasDispatch,
-    wb.cameraRef.current,
-  );
+  const {
+    loading: aiLoading,
+    handleChatRequest,
+    handleDrawRequest,
+    result: aiResult,
+  } = useAi(wb.selectedElementsRef, wb.cameraRef.current);
 
-  const sendReqToAi = async (command: string): Promise<string> => {
-    const ctx = wb.canvasRef.current?.getContext("2d");
-    if (!ctx) {
-      console.error("no ctx");
-      return new Promise((res, rej) => res("no ctx"));
+  const sendReqToAi = async (
+    command: string,
+    queryType: QueryType,
+  ): Promise<void> => {
+    switch (queryType) {
+      case "add":
+      case "edit":
+      case "create": {
+        return handleDrawRequest(
+          command,
+          wb.ConvertAndCenterGroupToScreenMiddle,
+          wb.updateMessage,
+          queryType,
+          wb.canvasState.textState.fontSize,
+        );
+      }
+      case "tell": {
+        return handleChatRequest(command, wb.updateMessage, queryType);
+      }
     }
-
-    await handleDrawRequest(
-      ctx,
-      wb.canvasState.textState.fontFamily,
-      command,
-      wb.ConvertAndCenterGroupToScreenMiddle,
-      wb.updateMessage,
-    );
-    return "here is the result";
   };
 
   const handleChatToggle = () => {
@@ -299,27 +305,11 @@ const Page = () => {
   // useOnboardingOverlay(wb.canvasRef);
 
   useEffect(() => {
-    if (!wb.canvasRef.current) return;
-    const ctx = wb.canvasRef.current.getContext("2d");
-    if (!ctx) {
-      console.error("canvas element not available");
-      return;
-    }
-    console.log("copy result:", result);
+    console.log("copy result:", aiResult);
 
-    // result.forEach((shape: DrawElement) => {
-    //   if (wb.inRoom) {
-    //     wb.dispatchWithSocket({ type: "ADD_SHAPE", payload: shape });
-    //   } else {
-    //     // drawShape(ctx, shape);
-    //     // const screenPos = worldToScreen(shape.startX, shape.startY, camera);
-    //     // const newShape = { ...shape, startX: screenPos.x, startY: screenPos.y };
-    //     wb.canvasDispatch({ type: "ADD_SHAPE", payload: shape });
-    //   }
-    // });
-    if (result.length === 0) return;
+    if (aiResult.length === 0) return;
     setPopupVisible(true);
-  }, [result]);
+  }, [aiResult]);
 
   useEffect(() => {
     async function getUserProfile() {
@@ -349,12 +339,12 @@ const Page = () => {
 
   return (
     <div className={`relative h-dvh w-dvw overflow-hidden touch-none`}>
-      <Button
+      {/*<Button
         className="z-1000 absolute left-100 top-100"
         onClick={() => (wb.selectedElementsRef.current = elemnts)}
       >
         click
-      </Button>
+      </Button>*/}
       <Toolkit {...toolkitProps} />
       {wb.textEdit && (
         <TextArea
@@ -418,9 +408,9 @@ const Page = () => {
           send={wb.send}
           messages={wb.messages}
           setMessages={wb.setMessages}
-          fetchChartFromAi={sendReqToAi}
+          fetchFromAi={sendReqToAi}
           isOpen={wb.isOpen}
-          isLoading={loading}
+          isLoading={aiLoading}
           slug={wb.slug}
           handleChatToggle={handleChatToggle}
         />
@@ -432,12 +422,12 @@ const Page = () => {
           setPopupVisible(false);
         }}
         onAccept={() => {
-          wb.selectedElementsRef.current = result;
+          wb.selectedElementsRef.current = aiResult;
           setPopupVisible(false);
         }}
       >
         <DynamicCanvas
-          elements={result}
+          elements={aiResult}
           draw={drawShape}
           getSize={getGroupOutlineBounds}
         />

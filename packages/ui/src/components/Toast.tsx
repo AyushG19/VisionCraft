@@ -12,7 +12,7 @@ const Toast = () => {
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => clearToast(), 4000);
+    const t = setTimeout(() => clearToast(), 3000);
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -37,7 +37,7 @@ const Toast = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
+          exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           className={`fixed bottom-4 right-4 z-[1000] w-80 rounded-xl border-1 border-global-shadow shadow-primary flex justify-between p-4 ${getColor(toast.type)}`}
         >

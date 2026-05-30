@@ -15,7 +15,12 @@ import {
 import OptionModal, { selected } from "./ui/OptionModal";
 import { AnimatePresence, motion } from "motion/react";
 import ChatTop from "./ChatTop";
-import { ClientMessageType, ServerMessageType } from "@repo/common";
+import {
+  ClientMessageType,
+  QueryType,
+  QueryTypeArr,
+  ServerMessageType,
+} from "@repo/common";
 import Loader from "./ui/Loader";
 
 const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
@@ -27,7 +32,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
       setMessages,
       isOpen,
       handleChatToggle,
-      fetchChartFromAi,
+      fetchFromAi,
       isLoading,
       slug,
     },
@@ -42,46 +47,61 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
     const { roomInfo } = useSocketContext();
     const { setToast } = useToast();
 
-    const handleMessageSend = async (content: string) => {
+    const handleMessageSend = async (message: string) => {
       if (currentUser === null) {
         setToast({
           title: "oops not logged in!",
-          message: "Please Login again.",
+          message: "Please login to use our AI.",
           type: "info",
         });
         return;
       }
       const { userId, name } = currentUser;
 
-      if (content.startsWith("/draw")) {
-        const command = content.replace("/draw", "").trim();
-        content = content.replace("/draw", "BOBO draw");
-        fetchChartFromAi(command);
-        // .then((reply) => {
-        //   const llmReply: ServerMessageType = {
-        //     content: reply,
-        //     name: "bobo",
-        //     sender_id: crypto.randomUUID(),
-        //     timeStamp_ms: Date.now(),
-        //   };
-        //   setMessages((prev) => [...prev, llmReply]);
-        // });
-        // setInputText("");
-        // return;
+      const tokens = message.trim().split(/\s+/);
+      const command = tokens[1];
+      if (
+        tokens[0]?.toLowerCase() == "bobo" &&
+        command &&
+        QueryTypeArr.includes(command)
+      ) {
+        const prompt = tokens.slice(2).join(" ");
+        fetchFromAi(prompt, command as QueryType);
+        message =
+          tokens[0].toUpperCase() +
+          " " +
+          command.toLocaleLowerCase() +
+          " " +
+          prompt;
       }
+      // if (content.startsWith("BOBO")) {
+      //   const command = content.replace("BOBO create", "").trim();
+      //   fetchFromAi(command, "create");
+      // .then((reply) => {
+      //   const llmReply: ServerMessageType = {
+      //     content: reply,
+      //     name: "bobo",
+      //     sender_id: crypto.randomUUID(),
+      //     timeStamp_ms: Date.now(),
+      //   };
+      //   setMessages((prev) => [...prev, llmReply]);
+      // });
+      // setInputText("");
+      // return;
+      // }else if(content.startsWith("BOBO ask"))
 
       const userMessage: ServerMessageType = {
         sender_id: userId,
         name: name,
         timeStamp_ms: Date.now(),
-        content: content,
+        content: message,
       };
       setMessages((prev) => [...prev, userMessage]);
 
       if (inRoom) {
         const messageToBackend: ClientMessageType = {
           name: name,
-          content: content,
+          content: message,
         };
         send("CHAT", messageToBackend);
       }
@@ -100,9 +120,9 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
       }
     };
 
-    const handleOptionSelect = (option: selected) => {
+    const handleOptionSelect = (option: QueryType) => {
       if (!inputRef.current) return;
-      setInputText(`/${option} `);
+      setInputText(`BOBO ${option} `);
       inputRef.current.focus();
       setShowOptions(false);
     };
@@ -118,12 +138,12 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
             ref={ref}
             className="absolute right-0 top-0 flex flex-col items-center justify-center h-dvh w-dvw lg:w-[360px] bg-priamry shadow-primary overflow-hidden outline-1 outline-global-shadow z-40"
           >
-            <ChatTop
+            {/*<ChatTop
               handleChatToggle={handleChatToggle}
               inRoom={inRoom}
               slug={slug}
               avatars={roomInfo.users}
-            />
+            />*/}
             <div className="w-full relative !h-full bg-gradient-to-t from-primary via-secondary to-primary overflow-hidden ">
               <div className="absolute inset-0 bg-[url('/pattern-2.svg')] bg-repeat bg-top-left opacity-20 pointer-events-none " />
 
@@ -131,6 +151,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
                 className={`absolute h-full inset-0 bottom-14 p-2 ${inRoom ? "pt-20" : "pt-2"}`}
               >
                 <Virtuoso
+                  className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   data={messages}
                   initialTopMostItemIndex={messages.length - 1}
                   itemContent={(index, message) => {

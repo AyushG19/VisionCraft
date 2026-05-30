@@ -1,10 +1,14 @@
-import { ShapeType } from "@repo/common";
+import { AiResponse, ShapeType } from "@repo/common";
 import { AppError } from "../error";
 import { Request, Response } from "express";
 import env from "../env.js";
 import Groq from "groq-sdk";
 import { GoogleGenAI } from "@google/genai";
-import { getMermaidPrompt } from "../utils/getMermaidPrompt";
+import {
+  buildPrompt,
+  getMermaidPrompt,
+  getSchema,
+} from "../utils/getMermaidPrompt";
 const groq = new Groq({ apiKey: env.GROQ_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
@@ -144,24 +148,44 @@ function isValidMermaid(src: any) {
 }
 export async function fetchMermaidSyntax(req: Request, res: Response) {
   try {
-    const { instruction, context } = req.body;
-    const MERMAID_PROMPT = getMermaidPrompt(instruction, context);
+    const { instruction, context, queryType } = req.body;
+    const MERMAID_PROMPT = buildPrompt(queryType, instruction, context);
 
     const result = await gemini.models.generateContent({
       model: env.MODEL,
       contents: [{ role: "user", parts: [{ text: MERMAID_PROMPT }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: getSchema(queryType),
+      },
     });
-    if (!result.text) throw new AppError(500, "No syntax found");
     console.log(result.text);
+    if (!result.text) throw new AppError(500, "No syntax found");
     // const mermaid = extractMermaidBlock(result.text);
     // if (!isValidMermaid(mermaid)) {
     //   throw new AppError(500, "Invalid Syntax");
     // }
-    res.status(200).json({ res: result.text });
+    res.status(200).json({ res: result.text }); //result.text is jsonobj of schema
   } catch (error: any) {
     console.error("Error:", error.response?.data || error.message);
     res
       .status(500)
       .json({ error: "Internal server error", details: error.message });
   }
+}
+
+export async function fetchAiResponse(req: Request, res: Response) {
+  const { instruction, context } = req.body;
+  const PROMPT = buildPrompt("tell", instruction, context);
+  const aiRes = await gemini.models.generateContent({
+    model: env.MODEL,
+    contents: { role: "user", parts: [{ text: PROMPT }] },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: getSchema("tell"),
+    },
+  });
+
+  if (!aiRes.text) throw new AppError(500, "Invalid response from LLM");
+  res.status(200).json({ res: aiRes.text });
 }

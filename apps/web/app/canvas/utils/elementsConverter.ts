@@ -118,7 +118,7 @@ export function convertExcalidrawToShape(
             // use half arrow length as max width — label shouldn't span full arrow
             fontSize: getFittedFontSize(
               e.label.text,
-              arrowLength * 0.5,
+              arrowLength * 0.8,
               30,
               e.label.fontSize,
               fontFamily,
