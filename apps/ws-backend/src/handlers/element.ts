@@ -24,7 +24,7 @@ export async function ADD_SHAPE({
   const event: ElementRedisData = { type: "ADD", userId, element: payload };
   element.add(roomId, event);
 
-  sendInfo(ws, "Element added");
+  // sendInfo(ws, "Element added");
 }
 
 export async function UPD_SHAPE({
@@ -47,7 +47,7 @@ export async function UPD_SHAPE({
   const event: ElementRedisData = { type: "UPD", userId, elements: payload };
   element.update(roomId, event); //publist occurs here
 
-  sendInfo(ws, "Shape updated");
+  // sendInfo(ws, "Shape updated");
 }
 
 export async function DEL_SHAPE({
@@ -70,35 +70,35 @@ export async function DEL_SHAPE({
   const event: ElementRedisData = { type: "DEL", userId, elementIds: payload };
   element.delete(roomId, event);
 
-  sendInfo(ws, "Shape deleted");
+  // sendInfo(ws, "Shape deleted");
 }
 
-export async function BULK_DEL_SHAPE({
-  ws,
-  roomId,
-  userId,
-  cleanData,
-  services,
-}: HandlerContext) {
-  if (cleanData.type !== "BULK_DEL_SHAPE") return;
+// export async function BULK_DEL_SHAPE({
+//   ws,
+//   roomId,
+//   userId,
+//   cleanData,
+//   services,
+// }: HandlerContext) {
+//   if (cleanData.type !== "BULK_DEL_SHAPE") return;
 
-  const { payload } = cleanData;
-  const { element } = services;
-  if (!payload) {
-    sendError(ws, "MALFORMED_PAYLOAD");
-    return;
-  }
-  touchRoom(roomId);
+//   const { payload } = cleanData;
+//   const { element } = services;
+//   if (!payload) {
+//     sendError(ws, "MALFORMED_PAYLOAD");
+//     return;
+//   }
+//   touchRoom(roomId);
 
-  const event: ElementRedisData = {
-    type: "BULK_DEL",
-    userId,
-    elementIds: payload,
-  };
-  element.deleteAll(roomId, event);
+//   const event: ElementRedisData = {
+//     type: "BULK_DEL",
+//     userId,
+//     elementIds: payload,
+//   };
+//   element.deleteAll(roomId, event);
 
-  sendInfo(ws, "Shape deleted");
-}
+//   sendInfo(ws, "Shape deleted");
+// }
 
 export async function RESIZE({
   ws,
@@ -114,7 +114,7 @@ export async function RESIZE({
     element: cleanData.payload,
   };
   redisPub.publish(`room:${roomId}:events`, JSON.stringify(pubSubData));
-  sendInfo(ws, "resize update sent");
+  // sendInfo(ws, "resize update sent");
 }
 
 export async function DRAG({

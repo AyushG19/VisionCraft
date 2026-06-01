@@ -52,10 +52,10 @@ export const incomingSocketHandlers: Record<
     canvasDispatch({ type: "DEL_SHAPE", payload: event.payload });
   },
 
-  BULK_DEL_SHAPE: ({ event, canvasDispatch }) => {
-    if (event.type !== "BULK_DEL_SHAPE") return;
-    canvasDispatch({ type: "BULK_DEL_SHAPE", payload: event.payload });
-  },
+  // BULK_DEL_SHAPE: ({ event, canvasDispatch }) => {
+  //   if (event.type !== "BULK_DEL_SHAPE") return;
+  //   canvasDispatch({ type: "BULK_DEL_SHAPE", payload: event.payload });
+  // },
 
   CHAT: ({ event, setMessages }) => {
     if (event.type !== "CHAT") return;
@@ -79,7 +79,7 @@ export const incomingSocketHandlers: Record<
     memberCursorMap.delete(userId);
   },
 
-  USER_JOINED: async ({ event, setRoomInfo }) => {
+  USER_JOINED: async ({ event, setRoomInfo, memberCursorMap }) => {
     if (event.type !== "USER_JOINED") return;
     const { userId } = event.payload;
     const info = await getUserInfo(userId);
@@ -87,6 +87,7 @@ export const incomingSocketHandlers: Record<
       ...prev,
       users: [...prev.users, generateUserObject(info)],
     }));
+    memberCursorMap.delete(userId);
   },
 
   RESIZE: async ({ event, activeElementMap }) => {

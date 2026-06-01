@@ -127,6 +127,7 @@ export const createSelectInteraction = (
   const handleSelectMouseMove = (
     worldPos: { x: number; y: number },
     currSelected: DrawElement[],
+    activeElementMapRef: React.RefObject<ActiveElementMapType>,
     canvasState: CanvasState,
     isShiftHeld: boolean,
   ): { shapes: DrawElement[]; marquee: MarqueeState | null } | null => {
@@ -146,6 +147,12 @@ export const createSelectInteraction = (
       // select all shapes whose bounding box intersects the marquee
       const inMarquee = canvasState.drawnShapes.filter((s) => {
         if (s.isDeleted) return false;
+        if (
+          [...activeElementMapRef.current.values()].some(
+            (e) => e.element.id === s.id,
+          )
+        )
+          return false;
         const b = getOutlineBounds(s);
         if (!b) return null;
         return (

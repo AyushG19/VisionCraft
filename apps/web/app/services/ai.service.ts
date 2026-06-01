@@ -1,7 +1,7 @@
 import type { MermaidToExcalidrawResult } from "@excalidraw/mermaid-to-excalidraw/dist/interfaces";
 import { fetchMermaidPrompt } from "../api/ai.api";
-import { DrawElement, QueryType } from "@repo/common";
-import { UserProvider } from "@repo/hooks";
+import type { DrawElement, QueryType } from "@repo/common";
+// import { UserProvider } from "@repo/hooks";
 
 export async function getExcalidrawElements(
   userPrompt: string,

@@ -115,9 +115,6 @@ export const useSocketWithWhiteboard = () => {
         case "CLEAR_CANVAS":
           send("CLEAR_CANVAS", {});
           break;
-        case "BULK_DEL_SHAPE":
-          send("BULK_DEL_SHAPE", action.payload);
-          break;
       }
     },
     [send],
@@ -192,6 +189,8 @@ export const useSocketWithWhiteboard = () => {
 
       const staticMutatingEvents = [
         "ADD_SHAPE",
+        "DRAG",
+        "CURSOR",
         "UPD_SHAPE",
         "DEL_SHAPE",
         "BULK_DEL_SHAPE",
@@ -199,7 +198,7 @@ export const useSocketWithWhiteboard = () => {
       ];
       if (staticMutatingEvents.includes(event.type)) {
         staticDirtyRef.current = true;
-        console.log(scheduleRenderRef.current);
+        // console.log(scheduleRenderRef.current);
         scheduleRenderRef.current();
       }
 
@@ -224,11 +223,12 @@ export const useSocketWithWhiteboard = () => {
       const shape = selectedElementsRef.current[0];
       if (!shape) return;
       const updated = updater(shape);
-      dispatchWithSocket({ type: "UPD_SHAPE", payload: [updated] });
+      sendActiveElementUpdate({ type: "DRAG", payload: [updated] });
       selectedElementsRef.current = [
         updated,
         ...selectedElementsRef.current.slice(1),
       ];
+      setSelectedElementForUI(updated);
       staticDirtyRef.current = true;
       scheduleRenderRef.current();
     },
@@ -398,9 +398,13 @@ export const useSocketWithWhiteboard = () => {
 
   const handleLeaveRoom = async () => {
     disconnect();
-    setRoomInfo({ ...roomInfo, roomId: "", slug: "" });
-    setToken("");
+    // setRoomInfo({ ...roomInfo, roomId: "", slug: "" });
+    // setToken("");
+    // activeElementMap.current.clear();
+    // memberCursor.current.clear();
+    // canvasDispatch({ type: "CLEAR_CANVAS" });
     sessionStorage.removeItem("activeRoom");
+    location.reload();
   };
 
   // rejoin on refresh

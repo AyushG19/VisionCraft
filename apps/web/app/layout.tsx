@@ -31,6 +31,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <link
+        rel="preload"
+        href="/fonts/KronaOne-Regular.ttf"
+        as="font"
+        type="font/ttf"
+        crossOrigin="anonymous"
+      />
       <body
         className={`overflow-hidden overscroll-none touch-none antialiased`}
       >

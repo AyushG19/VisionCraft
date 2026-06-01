@@ -34,7 +34,7 @@ export function PingProvider() {
         if (intervalIdRef.current) clearInterval(intervalIdRef.current);
       })
       .catch((err) => {
-        setToast({ title: "Ping error", message: err.message, type: "error" });
+        console.error("Ping error");
       })
       .finally(() => {
         setLoading(false);

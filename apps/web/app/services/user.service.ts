@@ -1,6 +1,6 @@
 import { AppError } from "../api/error";
 import { fetchUserInfoApi, fetchProfileApi } from "../api/user.api";
-import { User, UserType } from "@repo/common";
+import type { UserType } from "@repo/common";
 
 export async function getUserInfo(userId: string) {
   return await fetchUserInfoApi(userId);
@@ -8,6 +8,7 @@ export async function getUserInfo(userId: string) {
 
 export const getProfile = async (): Promise<UserType> => {
   const data = await fetchProfileApi();
+  const { User } = await import("@repo/common");
   const parsedData = User.safeParse(data);
   if (!parsedData.success) {
     console.error(parsedData.error);

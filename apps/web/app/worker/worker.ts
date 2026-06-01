@@ -1,10 +1,12 @@
 export {};
 
 interface WorkerMessage {
-  imgBitmap: ImageBitmap;
+  file: File;
 }
 self.onmessage = async function (message: MessageEvent<WorkerMessage>) {
-  const { imgBitmap } = message.data;
+  const { file } = message.data;
+  const imgBitmap = await createImageBitmap(file);
+
   console.log("imgbitmap:", imgBitmap);
 
   const MAX_DIMENTION = 400;

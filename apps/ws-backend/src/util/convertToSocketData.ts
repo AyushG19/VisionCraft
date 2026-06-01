@@ -59,11 +59,5 @@ export function convertToSocketData(data: RedisData): ServerSocketDataType {
         payload: { userId: data.userId },
       };
     }
-    case "BULK_DEL": {
-      return {
-        type: "BULK_DEL_SHAPE",
-        payload: data.elementIds,
-      };
-    }
   }
 }

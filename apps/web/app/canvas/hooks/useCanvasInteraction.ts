@@ -66,6 +66,14 @@ const useCanvasInteraction = (
   const selectedElementsRef = interactionState.tempShapesRef; // DrawElement[]
   const marqueeStateRef = useRef<MarqueeState | null>(null);
   const textEditRef = useRef<TextEditState>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    workerRef.current = new Worker(
+      new URL("../../worker/worker.ts", import.meta.url),
+    );
+    return () => workerRef.current?.terminate();
+  }, []);
 
   useEffect(() => {
     textEditRef.current = textEdit;
@@ -316,6 +324,7 @@ const useCanvasInteraction = (
           const result = selectInteraction.handleSelectMouseMove(
             pos,
             selectedElementsRef.current,
+            activeElementMapRef,
             currentState,
             e.shiftKey,
           );
@@ -510,15 +519,14 @@ const useCanvasInteraction = (
       const target = e.target as HTMLInputElement;
       const fileList = target.files;
       if (!fileList || fileList.length === 0) return;
+
       const lastImg = fileList[fileList.length - 1]!;
       target.value = "";
 
-      const worker = new Worker(
-        new URL("../../worker/worker.ts", import.meta.url),
-      );
-      const imgBitmap = await createImageBitmap(lastImg);
-      worker.postMessage({ imgBitmap });
-      worker.onmessage = async (message) => {
+      if (!workerRef.current) return;
+
+      workerRef.current.postMessage({ file: lastImg });
+      workerRef.current.onmessage = async (message) => {
         const compressedBlob = message.data;
         const compressedBitmap = await createImageBitmap(compressedBlob);
         const newImage = createNewImage(

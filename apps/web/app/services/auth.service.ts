@@ -1,4 +1,4 @@
-import { LoginFormType, SignupFormType, User, UserType } from "@repo/common";
+import { LoginFormType, SignupFormType, UserType } from "@repo/common";
 import { loginApi, logoutApi, signupApi } from "../api/auth.api";
 import { AppError } from "../api/error";
 
@@ -7,6 +7,8 @@ export const loginService = async (
 ): Promise<UserType> => {
   const data = await loginApi(loginData);
   console.log(data);
+
+  const { User } = await import("@repo/common");
   const parsedData = User.safeParse(data);
   if (!parsedData.success) {
     console.error(parsedData.error);
@@ -19,6 +21,8 @@ export const signupService = async (
   signupData: SignupFormType,
 ): Promise<UserType> => {
   const data = await signupApi(signupData);
+  const { User } = await import("@repo/common");
+
   const parsedData = User.safeParse(data);
   if (!parsedData.success) {
     console.error(parsedData.error);

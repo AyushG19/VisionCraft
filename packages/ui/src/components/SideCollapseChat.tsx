@@ -138,12 +138,12 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
             ref={ref}
             className="absolute right-0 top-0 flex flex-col items-center justify-center h-dvh w-dvw lg:w-[360px] bg-priamry shadow-primary overflow-hidden outline-1 outline-global-shadow z-40"
           >
-            {/*<ChatTop
+            <ChatTop
               handleChatToggle={handleChatToggle}
               inRoom={inRoom}
               slug={slug}
               avatars={roomInfo.users}
-            />*/}
+            />
             <div className="w-full relative !h-full bg-gradient-to-t from-primary via-secondary to-primary overflow-hidden ">
               <div className="absolute inset-0 bg-[url('/pattern-2.svg')] bg-repeat bg-top-left opacity-20 pointer-events-none " />
 

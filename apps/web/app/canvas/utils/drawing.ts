@@ -380,17 +380,17 @@ export const drawImageShape = (
     return;
   }
 
-  // Already loading — do nothing, wait for resolve
+  // Already loading wait for resolve
   if (cached instanceof Promise) return;
 
-  // Not in cache yet — if has cloudinary link, load from URL
+  // Not in cache — if has cloudinary link, load from URL
   if (shape.link) {
     const promise = fetch(shape.link)
       .then((r) => r.blob())
       .then((blob) => createImageBitmap(blob))
       .then((bm) => {
         setImage(shape.id, bm);
-        onLoad?.(); // trigger one redraw
+        onLoad?.();
         return bm;
       });
     setImage(shape.id, promise); // block duplicate calls

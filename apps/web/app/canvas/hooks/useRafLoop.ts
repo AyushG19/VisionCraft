@@ -4,7 +4,7 @@ import { MemberCursor } from "@repo/hooks";
 import { Camera } from "./useCamera";
 import { ActiveElementMapType, CanvasState, InteractionState } from "../types";
 import { MarqueeState } from "../helper/selectInteraction.helper";
-import { drawShape, highlightShape } from "../utils/drawing";
+import { drawImageShape, drawShape, highlightShape } from "../utils/drawing";
 import { drawGrid } from "../../lib/drawGrid";
 import { getUserColor } from "../helper/color.helper";
 import { worldToScreen } from "../../lib/math";
@@ -42,7 +42,7 @@ const useRafLoop = ({
   const isRenderPending = useRef(false);
   const frameIdRef = useRef<number>(0);
 
-  // all the refs needed inside renderLoop — stable, never change
+  // all the refs needed inside renderLoop never change
   const propsRef = useRef({
     canvasRef,
     canvasStateRef,
@@ -54,8 +54,7 @@ const useRafLoop = ({
     staticDirtyRef,
   });
 
-  // keep propsRef in sync every render
-  // so renderLoop always reads latest refs without needing useEffect
+  // renderLoop always reads latest refs without needing useEffect
   propsRef.current = {
     canvasRef,
     canvasStateRef,
@@ -67,8 +66,7 @@ const useRafLoop = ({
     staticDirtyRef,
   };
 
-  // defined at module level — no useEffect, no closure issues
-  // reads everything through propsRef so it's always fresh
+  // everything through propsRef so it's always fresh
   const renderLoop = useCallback(() => {
     isRenderPending.current = false;
 
@@ -114,6 +112,13 @@ const useRafLoop = ({
       for (const shape of canvasStateRef.current!.drawnShapes) {
         if (selectedIds.has(shape.id)) continue;
         if (activeElementMapRef.current!.has(shape.id)) continue;
+        if (shape.type === "image") {
+          drawImageShape(oc as any, shape, () => {
+            staticDirtyRef.current = true;
+            scheduleRender();
+          });
+          continue;
+        }
         drawShape(oc as any, shape, cam, false);
       }
 
@@ -162,15 +167,22 @@ const useRafLoop = ({
 
     for (const [userId, cursor] of cursorMapRef.current!) {
       let el = cursorElCache.current.get(userId);
+
+      if (el && !el.isConnected) {
+        cursorElCache.current.delete(userId);
+        el = undefined;
+      }
       if (!el) {
         el = document.getElementById(`cursor:${userId}`) ?? undefined;
+        // console.log("Cursor:", el);
         if (el) cursorElCache.current.set(userId, el);
       }
       if (!el) continue;
       const pos = worldToScreen(cursor.x, cursor.y, cam);
       el.style.transform = `translate(${pos.x - 20}px, ${pos.y - 3}px)`;
+      console.log("Pos update: ", pos);
     }
-  }, []); // stable — reads everything through propsRef
+  }, []);
 
   const scheduleRender = useCallback(() => {
     if (isRenderPending.current) return;

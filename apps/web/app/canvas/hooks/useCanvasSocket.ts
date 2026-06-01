@@ -12,10 +12,10 @@ export function useCanvasSocket(
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
-  const { setInRoom } = useSocketContext();
+  const { setInRoom, memberCursor } = useSocketContext();
   const { setToast } = useToast();
 
-  const MAX_RECONNECT_ATTEMPTS = 5;
+  const MAX_RECONNECT_ATTEMPTS = 3;
   const RECONNECT_DELAY = 2000;
 
   const send = (
@@ -63,11 +63,12 @@ export function useCanvasSocket(
         }),
       );
       setInRoom(true);
+      memberCursor.current.clear();
     };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("RAW: ", data);
+      // console.log("RAW: ", data);
       const validatedData = ServerSocketData.safeParse(data);
 
       if (validatedData.success) {
@@ -109,6 +110,9 @@ export function useCanvasSocket(
         reconnectTimeoutRef.current = setTimeout(() => {
           connect(roomId, slug, token);
         }, RECONNECT_DELAY);
+
+        if (reconnectAttemptsRef.current === MAX_RECONNECT_ATTEMPTS)
+          sessionStorage.removeItem("activeRoom");
       }
     };
   };

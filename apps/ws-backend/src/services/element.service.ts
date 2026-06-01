@@ -4,7 +4,7 @@ import { RedisData } from "../types";
 
 export type ElementRedisData = Extract<
   RedisData,
-  { type: "ADD" | "DEL" | "UPD" | "BULK_DEL" }
+  { type: "ADD" | "DEL" | "UPD" }
 >;
 export class ElementService {
   constructor(
@@ -52,20 +52,20 @@ export class ElementService {
     ]);
   }
 
-  async deleteAll(roomId: string, event: ElementRedisData): Promise<void> {
-    if (event.type !== "BULK_DEL") return;
-    await Promise.all([
-      this.queue.add(
-        ELEMENT_JOBS.DELETE_ALL,
-        {
-          roomId,
-          elementIds: event.elementIds,
-        },
-        { jobId: `element-${Date.now()}` },
-      ),
-      this.pub.publish(`room:${roomId}:events`, JSON.stringify(event)),
-    ]);
-  }
+  //   async deleteAll(roomId: string, event: ElementRedisData): Promise<void> {
+  //     if (event.type !== "BULK_DEL") return;
+  //     await Promise.all([
+  //       this.queue.add(
+  //         ELEMENT_JOBS.DELETE_ALL,
+  //         {
+  //           roomId,
+  //           elementIds: event.elementIds,
+  //         },
+  //         { jobId: `element-${Date.now()}` },
+  //       ),
+  //       this.pub.publish(`room:${roomId}:events`, JSON.stringify(event)),
+  //     ]);
+  //   }
 }
 
 export type ElementServiceType = typeof ElementService;

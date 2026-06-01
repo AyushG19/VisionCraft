@@ -2,14 +2,23 @@
 import {
   DotsPattern,
   TopSection,
-  MainContent,
   BottomSection,
   FloatingShapes,
-  DecorativeLines,
-} from "@workspace/ui/index";
+} from "@repo/ui";
 import { loginService, signupService } from "./services/auth.service";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+const MainContent = dynamic(
+  () => import("@workspace/ui/index").then((mod) => mod.MainContent),
+  {
+    ssr: false,
+  },
+);
 
+const DecorativeLines = dynamic(
+  () => import("@workspace/ui/index").then((mod) => mod.DecorativeLines),
+  { ssr: false },
+);
 export default function Page() {
   const router = useRouter();
   const navigate = (route: string) => {

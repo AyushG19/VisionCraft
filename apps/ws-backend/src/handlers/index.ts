@@ -3,7 +3,6 @@ import { CHAT } from "./chat";
 import { CURSOR } from "./cursor";
 import {
   ADD_SHAPE,
-  BULK_DEL_SHAPE,
   DEL_SHAPE,
   DESELECT,
   DRAG,
@@ -21,7 +20,6 @@ export const handlers: Partial<
   ADD_SHAPE,
   UPD_SHAPE,
   DEL_SHAPE,
-  BULK_DEL_SHAPE,
   CURSOR,
   RESIZE,
   DRAG,

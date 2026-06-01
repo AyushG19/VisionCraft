@@ -38,6 +38,7 @@ const ToolIcon = ({
   if (toolInfo.id === "image") {
     return (
       <div
+        aria-label="upload image"
         className={`w-6 h-6 lg:w-9 lg:h-9 relative flex items-center justify-center  rounded-md lg:rounded-lg bg-secondary pointer-events-none outline-1 outline-global-shadow scale-[97%] hover:scale-100 $${
           currTool === toolInfo.id
             ? "shadow-shinyshadow-pressed button-active translate-[1px]"

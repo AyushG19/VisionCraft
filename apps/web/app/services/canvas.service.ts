@@ -1,4 +1,4 @@
-import { JoinRoomResponseType, newRoom } from "@repo/common";
+import type { JoinRoomResponseType, newRoom } from "@repo/common";
 import {
   createRoomApi,
   joinRoomApi,
