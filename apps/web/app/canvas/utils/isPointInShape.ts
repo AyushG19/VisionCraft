@@ -1,7 +1,6 @@
 import { DrawElement, PointType } from "@repo/common";
 import { Bounds, getHandles, HandleName } from "../../lib/getHandles";
 import { ShapeBounds } from "./getBoundsHelpers";
-import { only } from "node:test";
 
 // Helper function to check if point is near a line segment
 const isPointNearLine = (

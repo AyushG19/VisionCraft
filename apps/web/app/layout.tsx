@@ -8,6 +8,21 @@ import { ThemeProvider } from "./ThemeProvider";
 //@ts-ignore
 import "./globals.css";
 import { Metadata, Viewport } from "next";
+import { Krona_One, Handlee } from "next/font/google";
+
+const kronaOne = Krona_One({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-krona-one", // Maps to Tailwind
+});
+
+const handlee = Handlee({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-handlee", // Maps to Tailwind
+});
 
 export const metadata: Metadata = {
   title: { default: "VisionCraft", template: "%S | VisionCraft" },
@@ -30,14 +45,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <link
-        rel="preload"
-        href="/fonts/KronaOne-Regular.ttf"
-        as="font"
-        type="font/ttf"
-        crossOrigin="anonymous"
-      />
+    <html
+      lang="en"
+      className={`${kronaOne.variable},${handlee.variable}`}
+      suppressHydrationWarning
+    >
       <body
         className={`overflow-hidden overscroll-none touch-none antialiased`}
       >

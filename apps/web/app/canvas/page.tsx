@@ -1,5 +1,5 @@
 "use client";
-import { Toolkit, toolkitProps, TextArea } from "@repo/ui";
+import { Toolkit, toolkitProps, TextArea, JoinRoomModal, Zoom } from "@repo/ui";
 // import { Toolkit, toolkitProps } from "@repo/ui/components/Toolkit";
 // import TextArea from "@repo/ui/components/ui/TextArea";
 // import CanvasPopup from "@repo/ui/components/CanvasPopup";
@@ -7,13 +7,17 @@ import { Toolkit, toolkitProps, TextArea } from "@repo/ui";
 // import Toast from "@repo/ui/components/Toast";
 
 import dynamic from "next/dynamic";
-const JoinRoomModal = dynamic(
-  () => import("@repo/ui").then((mod) => mod.JoinRoomModal),
-  { ssr: false },
-);
+// const JoinRoomModal = dynamic(
+//   () =>
+//     import("@repo/ui/components/SideCollapseChat").then((mod) => mod.default),
+//   { ssr: false },
+// );
 const SideCollapseChat = dynamic(
-  () => import("@repo/ui").then((mod) => mod.SideCollapseChat),
-  { ssr: false },
+  () =>
+    import("@repo/ui/components/SideCollapseChat").then((mod) => mod.default),
+  {
+    ssr: false,
+  },
 );
 const SideToolkit = dynamic(
   () => import("@repo/ui").then((mod) => mod.SideToolkit),
@@ -35,8 +39,8 @@ import useAi from "./hooks/useAi";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { logout } from "../services/auth.service";
-import UsersCursor from "@workspace/ui/components/ui/UsersCursor";
-import { useToast, useUser } from "@repo/hooks";
+import UsersCursor from "@repo/ui/components/ui/UsersCursor";
+import { useUser } from "@repo/hooks";
 import { getProfile } from "../services/user.service";
 import { drawShape } from "./utils/drawing";
 import { getGroupOutlineBounds } from "./utils/getBoundsHelpers";
@@ -45,7 +49,6 @@ import { QueryType } from "@repo/common";
 const Page = () => {
   const [popupVisible, setPopupVisible] = useState<boolean>(false);
   const { theme, setTheme } = useTheme();
-  // const { setToast } = useToast();
   const { currentUser, setCurrentUser } = useUser();
   const wb = useSocketWithWhiteboard();
 
@@ -97,7 +100,7 @@ const Page = () => {
         const user = await getProfile();
         setCurrentUser({ avatar: "", ...user });
       } catch (err: any) {
-        console.error("Profile fetch failed.");
+        console.warn("Profile fetch failed.");
         // setToast({
         //   title: "server error!",
         //   message: err.message ?? "Error from server",
@@ -119,7 +122,7 @@ const Page = () => {
   };
 
   return (
-    <div className={`relative h-dvh w-dvw overflow-hidden touch-none`}>
+    <main className={`relative h-dvh w-dvw overflow-hidden touch-none`}>
       {/*<Button
         className="z-1000 absolute left-100 top-100"
         onClick={() => (wb.selectedElementsRef.current = elemnts)}
@@ -138,17 +141,18 @@ const Page = () => {
           toolKitState={wb.canvasState.toolState}
         />
       )}
-      <Toast />
       <canvas
         ref={wb.canvasRef}
         className="w-full h-full bg-canvas touch-none "
       ></canvas>
-      {wb.users.map(
-        (u) =>
-          u.userId !== currentUser?.userId && (
-            <UsersCursor key={u.userId} {...u} />
-          ),
-      )}
+      <Zoom zoomDisplay={wb.zoomDisplay} changeZoom={wb.changeZoom} />
+      {wb.inRoom &&
+        wb.users.map(
+          (u) =>
+            u.userId !== currentUser?.userId && (
+              <UsersCursor key={u.userId} {...u} />
+            ),
+        )}
       {wb.selectedElementForUI && (
         <SideToolkit
           selectedShape={wb.selectedElementForUI}
@@ -186,38 +190,38 @@ const Page = () => {
           clearCanvas={wb.clearCanvas}
         />
 
-        {wb.isOpen && (
-          <SideCollapseChat
-            inRoom={wb.inRoom}
-            send={wb.send}
-            messages={wb.messages}
-            setMessages={wb.setMessages}
-            fetchFromAi={sendReqToAi}
-            isOpen={wb.isOpen}
-            isLoading={aiLoading}
-            slug={wb.slug}
-            handleChatToggle={handleChatToggle}
-          />
-        )}
-      </>
-      <Toast />
-      <CanvasPopup
-        isOpen={popupVisible}
-        onClose={() => {
-          setPopupVisible(false);
-        }}
-        onAccept={() => {
-          wb.selectedElementsRef.current = aiResult;
-          setPopupVisible(false);
-        }}
-      >
-        <DynamicCanvas
-          elements={aiResult}
-          draw={drawShape}
-          getSize={getGroupOutlineBounds}
+        <SideCollapseChat
+          inRoom={wb.inRoom}
+          send={wb.send}
+          messages={wb.messages}
+          setMessages={wb.setMessages}
+          fetchFromAi={sendReqToAi}
+          isOpen={wb.isOpen}
+          isLoading={aiLoading}
+          slug={wb.slug}
+          handleChatToggle={handleChatToggle}
         />
-      </CanvasPopup>
-    </div>
+      </>
+      {popupVisible && (
+        <CanvasPopup
+          isOpen={popupVisible}
+          onClose={() => {
+            setPopupVisible(false);
+          }}
+          onAccept={() => {
+            wb.selectedElementsRef.current = aiResult;
+            setPopupVisible(false);
+          }}
+        >
+          <DynamicCanvas
+            elements={aiResult}
+            draw={drawShape}
+            getSize={getGroupOutlineBounds}
+          />
+        </CanvasPopup>
+      )}
+      <Toast />
+    </main>
   );
 };
 

@@ -5,14 +5,8 @@ import { Button } from "./ui/button";
 import { Virtuoso } from "react-virtuoso";
 import MessageBubble from "./ui/MessageBubble";
 import { SideChatPropsType } from "./types";
-import {
-  useError,
-  UserInfo,
-  useSocketContext,
-  useToast,
-  useUser,
-} from "@repo/hooks";
-import OptionModal, { selected } from "./ui/OptionModal";
+import { UserInfo, useSocketContext, useToast, useUser } from "@repo/hooks";
+import OptionModal from "./ui/OptionModal";
 import { AnimatePresence, motion } from "motion/react";
 import ChatTop from "./ChatTop";
 import {
@@ -136,7 +130,7 @@ const SideCollapseChat = React.forwardRef<HTMLDivElement, SideChatPropsType>(
             exit={{ x: "100%" }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             ref={ref}
-            className="absolute right-0 top-0 flex flex-col items-center justify-center h-dvh w-dvw lg:w-[360px] bg-priamry shadow-primary overflow-hidden outline-1 outline-global-shadow z-40"
+            className="absolute right-0 top-0 flex flex-col items-center justify-center h-dvh w-dvw md:w-[360px] bg-priamry shadow-primary overflow-hidden outline-1 outline-global-shadow z-40"
           >
             <ChatTop
               handleChatToggle={handleChatToggle}

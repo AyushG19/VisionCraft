@@ -85,8 +85,8 @@ export const ROOM_OPTION_SECTIONS = [
     label: "Links",
     items: [
       {
-        id: "profile",
-        label: "Profile",
+        id: "auth",
+        label: "Login",
         mode: "both",
         icon: IconUser,
       },
@@ -119,7 +119,7 @@ export type OptionId =
   | "clear-canvas"
   | "export"
   | "commands"
-  | "profile"
+  | "auth"
   | "github"
   | "x";
 export type OptionSection = (typeof ROOM_OPTION_SECTIONS)[number]["section"];

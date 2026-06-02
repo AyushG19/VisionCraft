@@ -38,15 +38,15 @@ const ToolIcon = ({
   if (toolInfo.id === "image") {
     return (
       <div
-        aria-label="upload image"
-        className={`w-6 h-6 lg:w-9 lg:h-9 relative flex items-center justify-center  rounded-md lg:rounded-lg bg-secondary pointer-events-none outline-1 outline-global-shadow scale-[97%] hover:scale-100 $${
+        className={`w-6 h-6 md:w-9 md:h-9 relative flex items-center justify-center  rounded-md bg-secondary pointer-events-none outline-1 outline-global-shadow scale-[97%] hover:scale-100 $${
           currTool === toolInfo.id
             ? "shadow-shinyshadow-pressed button-active translate-[1px]"
             : "button-press "
         }  text-secondary-contrast `}
       >
-        <label>
+        <label htmlFor="fileInput">
           <input
+            aria-label="upload image"
             ref={inputRef}
             className="absolute text-transparent top-0 left-0 w-full h-full cursor-pointer pointer-events-auto"
             type="file"
@@ -75,7 +75,7 @@ const ToolIcon = ({
           onClick={() => onSelectTool(toolInfo.id)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`w-6 h-6 lg:w-9 lg:h-9 p-0 relative cursor-pointer z-10 outline-1 outline-global-shadow  rounded-md lg:rounded-lg scale-100 ${
+          className={`w-6 h-6 md:w-9 md:h-9 p-0 relative cursor-pointer z-10 outline-1 outline-global-shadow  rounded-md lg:rounded-lg scale-100 ${
             toolInfo.id !== "color" && currTool === toolInfo.id
               ? "shadow-shinyshadow-pressed button-active translate-[1px]"
               : "button-press "
@@ -100,7 +100,7 @@ const ToolIcon = ({
                   : "none"
             }
             fillOpacity={toolInfo.id === currTool ? 0.2 : 1}
-            className={`w-[10px] h-[10px] lg:w-[14px] lg:h-[14px]`}
+            className={`w-[10px] h-[10px] md:w-[14px] md:h-[14px]`}
             stroke={toolInfo.id === "color" ? 1 : 1.8}
           />
         </Button>

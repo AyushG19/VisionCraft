@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { ToolIcon } from "./ui/ToolIcon";
 import {
   Icon,
@@ -108,37 +108,37 @@ const Toolkit = ({
   };
 
   // Calculate max width on mount
-  useLayoutEffect(() => {
-    if (!toolkitRef.current || !toolIconRef.current) return;
+  // useLayoutEffect(() => {
+  //   if (!toolkitRef.current || !toolIconRef.current) return;
 
-    toolkitRef.current.style.width = "auto";
-    const naturalWidth = toolkitRef.current.scrollWidth;
-    currWidth.current = naturalWidth;
-    maxWidth.current = naturalWidth;
-    toolkitRef.current.style.width = `${naturalWidth}px`;
-    toolkitRef.current.style.maxWidth = `${naturalWidth}px`;
+  //   toolkitRef.current.style.width = "auto";
+  //   const naturalWidth = toolkitRef.current.scrollWidth;
+  //   currWidth.current = naturalWidth;
+  //   maxWidth.current = naturalWidth;
+  //   toolkitRef.current.style.width = `${naturalWidth}px`;
+  //   toolkitRef.current.style.maxWidth = `${naturalWidth}px`;
 
-    const x = window.innerWidth / 2 - naturalWidth / 2;
-    posRef.current = { x, y: 0 };
+  //   const x = window.innerWidth / 2 - naturalWidth / 2;
+  //   posRef.current = { x, y: 0 };
 
-    toolkitRef.current.style.transform = `translate(${x}px,0px)`;
-  }, []);
+  //   toolkitRef.current.style.transform = `translate(${x}px,0px)`;
+  // }, []);
 
   const onMouseDown = useCallback(
     (e: PointerEvent) => {
       if (!toolkitRef.current || !resizeRef.current) return;
 
-      if (e.target !== resizeRef.current) {
-        dragState.current = {
-          isDraging: true,
-          dragX: e.clientX - posRef.current.x,
-          dragY: e.clientY - posRef.current.y,
-        };
-      } else if (e.target === resizeRef.current) {
+      if (resizeRef.current.contains(e.target as Node)) {
         resizeState.current = {
           isResizing: true,
           initialX: e.clientX,
           initialWidth: currWidth.current,
+        };
+      } else {
+        dragState.current = {
+          isDraging: true,
+          dragX: e.clientX - posRef.current.x,
+          dragY: e.clientY - posRef.current.y,
         };
       }
     },
@@ -164,7 +164,7 @@ const Toolkit = ({
       } else if (resizeState.current.isResizing) {
         // Define these as constants at the top of the component (or outside it)
         const windowWidth = window.innerWidth;
-        const ITEM_CHUNK = windowWidth < 1024 ? 28 + 4 : 36 + 5; // w-9 (36px) + gap-2 (8px)
+        const ITEM_CHUNK = windowWidth < 1024 ? 28 + 4 : 36 + 6; // w-9 (36px) + gap-1.5 (6px)
         const LEFT_PAD = windowWidth < 1024 ? 8 : 12;
         const GRIP_WIDTH = 16 + 4; // w-4 (16px) + ml-1.5 (6px)
         const CHROME = LEFT_PAD + GRIP_WIDTH;
@@ -213,6 +213,16 @@ const Toolkit = ({
     const resizer = resizeRef.current;
     if (!resizer) return;
 
+    const rect = toolkit.getBoundingClientRect();
+    const naturalWidth = toolkit.scrollWidth;
+    currWidth.current = naturalWidth;
+    maxWidth.current = naturalWidth;
+    toolkit.style.width = `${naturalWidth}px`;
+    toolkit.style.maxWidth = `${naturalWidth}px`;
+
+    const x = window.innerWidth / 2 - naturalWidth / 2;
+    posRef.current = { x, y: rect.top };
+
     toolkit.addEventListener("pointerdown", onMouseDown);
     window.addEventListener("pointermove", onMouseMove, { passive: true });
     window.addEventListener("pointerup", onMouseUp);
@@ -229,9 +239,10 @@ const Toolkit = ({
       <div
         ref={toolkitRef}
         draggable={false}
-        className="lg:p-3 p-2 !pr-0 absolute top-0 left-0 rounded-lg flex items-center cursor-move bg-primary outline-1 outline-global-shadow shadow-shinyprimary text-primary-contrast "
+        style={{ transform: `translate(calc(50vw - 50%), 8px)` }}
+        className=" p-2 !pr-0 absolute rounded-lg flex items-center cursor-move bg-primary outline-1 outline-global-shadow shadow-pressed lg:shadow-shinyprimary text-primary-contrast "
       >
-        <div ref={toolIconRef} className="flex flex-wrap gap-1 lg:gap-2">
+        <div ref={toolIconRef} className="flex flex-wrap gap-1 md:gap-1.5">
           {tools.map((tool) => {
             return (
               <ToolIcon
@@ -247,11 +258,12 @@ const Toolkit = ({
           })}
           {/* <div className="h-8 w-[1px] ml-1 mt-1 bg-black"></div> */}
         </div>
-        <IconGripVertical
-          color="currentColor"
-          ref={resizeRef}
+        <div
           className="cursor-e-resize w-4 h-full ml-1 shrink-0 "
-        />
+          ref={resizeRef}
+        >
+          <IconGripVertical size={18} color="currentColor" />
+        </div>
       </div>
       <div className="fixed bottom-4 lg:left-6 lg:bottom-6 left-4 flex">
         {["undo", "redo"].map((name, i) => (
@@ -259,7 +271,7 @@ const Toolkit = ({
             key={i}
             aria-label={name}
             variant={"secondary"}
-            className={`w-7 h-7 lg:w-9 lg:h-9 p-0 flex items-center justify-center cursor-pointer shadow-shinysecondary text-secondary-contrast button-press-active transition-transform ease-in-out duration-100 outline-1 outline-global-shadow button-press ${i === 0 ? "rounded-r-none" : "rounded-l-none"}`}
+            className={`w-7 h-7 lg:w-9 lg:h-9 p-0 flex items-center justify-center cursor-pointer shadow-shinysecondary text-secondary-contrast button-press-active transition-transform ease-in-out duration-100 outline-1 outline-global-shadow button-press ${i === 0 ? "rounded-r-none -mr-[1px]" : "rounded-l-none"}`}
             onClick={() => handleClick(name)}
           >
             {i === 0 ? (

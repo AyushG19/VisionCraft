@@ -1,10 +1,5 @@
 "use client";
-import React, {
-  DialogHTMLAttributes,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { DialogHTMLAttributes, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./ui/button";
 interface CanvasPopupProps extends DialogHTMLAttributes<HTMLDialogElement> {

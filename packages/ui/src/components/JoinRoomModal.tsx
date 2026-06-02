@@ -18,6 +18,7 @@ type Props = {
   isChatOpen: boolean;
   clearCanvas: () => void;
   setTheme: (t: string) => void;
+  // preloadChat: () => void;
 };
 
 const containerVariants = {
@@ -36,11 +37,10 @@ const containerVariants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, x: -5 }, // Starts pushed to the right
-  show: { opacity: 1, x: 0, transition: { ease: "easeOut" } }, // Slides in beautifully
+  hidden: { opacity: 0, x: -5 },
+  show: { opacity: 1, x: 0, transition: { ease: "easeOut" } },
 };
 
-// ── Component ─────────────────────────────────────────────────────────────
 export default function JoinRoomModal({
   verifyJoin,
   makeNewRoom,
@@ -50,6 +50,7 @@ export default function JoinRoomModal({
   isChatOpen,
   setTheme,
   clearCanvas,
+  // preloadChat,
 }: Props) {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,23 +115,24 @@ export default function JoinRoomModal({
 
   return (
     <>
-      {/* ── Main Menu Container ── */}
+      {/* Main Menu Container */}
       <div
         ref={menuRef}
         className={`
-          fixed right-0 top-14 lg:top-2 z-40 flex flex-col items-end font-google-sans-code
+          fixed right-0 top-16 md:top-2 z-40 flex flex-col items-end font-google-sans-code
           transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-          ${isChatOpen ? " lg:-translate-x-[360px]" : "translate-x-0"}
+          ${isChatOpen ? " md:-translate-x-[360px]" : "translate-x-0"}
         `}
       >
         {/* Trigger Button */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          // onMouseEnter={() => preloadChat()}
           className={`
-            flex items-center w-8 h-8
+            flex items-center
             bg-primary text-primary-contrast rounded-l-xl outline-1 outline-global-shadow cursor-pointer
             transition-all
-            ${isMenuOpen ? "!rounded-bl-none px-4 md:h-10 justify-end w-full " : " justify-center md:h-10 md:w-10 delay-75"}
+            ${isMenuOpen ? "!rounded-bl-none px-4 h-8 md:h-10 justify-end w-full " : " justify-center w-8 h-8 md:h-10 md:w-10 delay-75"}
           `}
         >
           <span

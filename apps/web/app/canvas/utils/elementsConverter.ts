@@ -1,20 +1,7 @@
-import { ExcalidrawElementSkeleton } from "@workspace/ui/components/types";
-import { AIResultType, Transform } from "../types";
-import {
-  Labeltype,
-  LinearType,
-  DrawElement,
-  ColorType,
-  ShapeType,
-} from "@repo/common";
+import { ExcalidrawElementSkeleton } from "@repo/ui/components/types";
+import { AIResultType } from "../types";
+import { LinearType, DrawElement, ColorType, ShapeType } from "@repo/common";
 
-function transformPoint(x: number, y: number, t: Transform) {
-  return {
-    x: (x - t.bounds.minX) * t.scale + t.targetX,
-
-    y: (y - t.bounds.minY) * t.scale + t.targetY,
-  };
-}
 function getFittedFontSize(
   text: string,
   boxWidth: number,

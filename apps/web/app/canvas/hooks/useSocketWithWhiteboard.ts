@@ -1,23 +1,14 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import useCanvasInteraction from "./useCanvasInteraction";
 import canvasReducer, { initialCanvasState } from "../utils/canvasReducer";
 import {
   Action,
   ActiveElementMapType,
   AIResultType,
-  CanvasState,
   FontTypes,
-  SendPropsType,
   SideToolKitState,
-  TextEditState,
 } from "../types";
 import {
   AllowedFonts,
@@ -47,10 +38,9 @@ import {
 } from "../../canvas/helper/socketMessage.helper";
 import { Camera } from "./useCamera";
 import useCanvasRenderer from "./useCanvasRenderer";
-import { ExcalidrawElementSkeleton } from "@workspace/ui/components/types";
+import { ExcalidrawElementSkeleton } from "@repo/ui/components/types";
 import { convertAllElements } from "../utils/elementsConverter";
 import { getGroupOutlineBounds } from "../utils/getBoundsHelpers";
-import { createDraggedGroup } from "../utils/createTempShapeHelper";
 import { screenToWorld } from "../../lib/math";
 
 export const useSocketWithWhiteboard = () => {
@@ -140,6 +130,8 @@ export const useSocketWithWhiteboard = () => {
 
   //interaction — produces selectedElementsRef, marqueeStateRef, cameraRef
   const {
+    zoomDisplay,
+    changeZoom,
     selectedElementsRef,
     marqueeStateRef,
     cameraRef,
@@ -465,5 +457,7 @@ export const useSocketWithWhiteboard = () => {
     selectedElementForUI,
     ConvertAndCenterGroupToScreenMiddle,
     updateMessage,
+    changeZoom,
+    zoomDisplay,
   };
 };

@@ -9,14 +9,14 @@ import { loginService, signupService } from "./services/auth.service";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 const MainContent = dynamic(
-  () => import("@workspace/ui/index").then((mod) => mod.MainContent),
+  () => import("@repo/ui/index").then((mod) => mod.MainContent),
   {
     ssr: false,
   },
 );
 
 const DecorativeLines = dynamic(
-  () => import("@workspace/ui/index").then((mod) => mod.DecorativeLines),
+  () => import("@repo/ui/index").then((mod) => mod.DecorativeLines),
   { ssr: false },
 );
 export default function Page() {

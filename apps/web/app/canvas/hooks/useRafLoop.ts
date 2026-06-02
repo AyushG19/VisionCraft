@@ -9,7 +9,6 @@ import { drawGrid } from "../../lib/drawGrid";
 import { getUserColor } from "../helper/color.helper";
 import { worldToScreen } from "../../lib/math";
 import { getGroupOutlineBounds } from "../utils/getBoundsHelpers";
-import { drawGroupBoundingBox } from "../utils/drawing";
 
 type Props = {
   canvasRef: RefObject<HTMLCanvasElement | null>;

@@ -1,7 +1,6 @@
 export { default as JoinRoomModal } from "./components/JoinRoomModal";
 export { Toolkit, type toolkitProps } from "./components/Toolkit";
 export { default as RoomOptions } from "./components/RoomOptions";
-export { default as ResizableDiv } from "./components/ui/ResizableDiv";
 export {
   Button,
   buttonVariants,
@@ -26,3 +25,4 @@ export { default as TextArea } from "./components/ui/TextArea";
 export { default as CanvasPopup } from "./components/CanvasPopup";
 export { default as DynamicCanvas } from "./components/DynamicCanvas";
 export { default as Toast } from "./components/Toast";
+export { default as Zoom } from "./components/Zoom";

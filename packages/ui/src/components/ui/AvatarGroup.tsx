@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { UserInfo } from "@repo/hooks";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ToolTip";
 
 interface AvatarGroupProps {
   avatars: UserInfo[];
@@ -38,7 +44,7 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
       style={{
         height: size,
         width: baseWidth,
-        marginLeft: slideDistance, // Offset for the left-slide animation
+        marginLeft: slideDistance,
       }}
     >
       {visibleAvatars.map((avatar, index) => {
@@ -83,9 +89,14 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
                   className="absolute inset-0 w-full h-full object-cover text-center"
                 />
               ) : ( */}
-              <div className="w-full h-full flex items-center justify-center font-semibold text-sm outline-3 outline-global-shadow">
-                {avatar.name.trim()[0]?.toUpperCase()}
-              </div>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="w-full h-full flex items-center justify-center font-semibold text-sm outline-3 outline-global-shadow">
+                    {avatar.name.trim()[0]?.toUpperCase()}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>{avatar.name.trim()}</TooltipContent>
+              </Tooltip>
               {/* )} */}
             </div>
           </motion.div>

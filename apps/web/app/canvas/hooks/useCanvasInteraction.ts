@@ -13,7 +13,6 @@ import {
   Action,
   ActiveElementMapType,
   CanvasState,
-  InteractionState,
   TextEditState,
 } from "../types";
 import resizeCanvas from "../utils/canvasResizeHelper";
@@ -60,6 +59,8 @@ const useCanvasInteraction = (
   textEdit: TextEditState;
   setTextEdit: Dispatch<SetStateAction<TextEditState>>;
   interactionState: ReturnType<typeof useInteractionState>;
+  zoomDisplay: number;
+  changeZoom: (direction: "in" | "out") => void;
 } => {
   const [textEdit, setTextEdit] = useState<TextEditState>(null);
   const interactionState = useInteractionState();
@@ -84,8 +85,16 @@ const useCanvasInteraction = (
     scheduleRender();
   }, [scheduleRender, staticDirtyRef]);
 
-  const { cameraRef, onPanStart, onPanMove, onPanEnd, isPanning, onWheel } =
-    useCamera(canvasRef, canvasState.toolState.currentTool, markStaticDirty);
+  const {
+    zoomDisplay,
+    changeZoom,
+    cameraRef,
+    onPanStart,
+    onPanMove,
+    onPanEnd,
+    isPanning,
+    onWheel,
+  } = useCamera(canvasRef, canvasState.toolState.currentTool, markStaticDirty);
 
   const canvasStateRef = useRef(canvasState);
   useEffect(() => {
@@ -570,6 +579,8 @@ const useCanvasInteraction = (
   }, [inRoom, cameraRef]);
 
   return {
+    zoomDisplay,
+    changeZoom,
     selectedElementsRef,
     marqueeStateRef,
     cameraRef,

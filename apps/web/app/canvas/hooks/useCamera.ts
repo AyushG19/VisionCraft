@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useRef } from "react";
+import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 export type Camera = { x: number; y: number; z: number };
 
@@ -19,11 +19,10 @@ function getInitialCamera(): Camera {
 export function useCamera(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   currentTool: string,
-  onCameraChange: () => void, // markStaticDirty from useCanvasRenderer
+  onCameraChange: () => void,
 ) {
-  // ref instead of state — camera changes don't need React re-renders
-  // RAF loop reads cameraRef.current directly every frame
   const cameraRef = useRef<Camera>(getInitialCamera());
+  const [zoomDisplay, setZoomDisplay] = useState<number>(100);
 
   const isPanning = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -36,9 +35,32 @@ export function useCamera(
   const updateCamera = useCallback(
     (updater: (prev: Camera) => Camera) => {
       cameraRef.current = updater(cameraRef.current);
-      onCameraChange(); // mark static layer dirty
+      setZoomDisplay(parseFloat((cameraRef.current.z * 100).toFixed(1)));
+      onCameraChange();
     },
     [onCameraChange],
+  );
+
+  const changeZoom = useCallback(
+    (direction: "in" | "out") => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      updateCamera((prev) => {
+        const delta = direction === "in" ? 0.1 : -0.1;
+        const newZ = Math.min(Math.max(prev.z + delta, MIN_ZOOM), MAX_ZOOM);
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        return {
+          x: cx - ((cx - prev.x) / prev.z) * newZ,
+          y: cy - ((cy - prev.y) / prev.z) * newZ,
+          z: newZ,
+        };
+      });
+    },
+    [canvasRef, updateCamera],
   );
 
   const clampX = useCallback(
@@ -156,7 +178,9 @@ export function useCamera(
   );
 
   return {
-    cameraRef, // consumers read cameraRef.current, never a stale copy
+    zoomDisplay,
+    changeZoom,
+    cameraRef,
     isPanning,
     onPanStart,
     onPanMove,

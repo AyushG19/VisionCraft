@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { pingAllBackend } from "./api/ping";
-import { useError, useToast } from "@repo/hooks";
 
 export function PingProvider() {
   const [loading, setLoading] = useState(true);
   const [showDescription, setShowDescription] = useState(false);
   const textRef = useRef<HTMLDivElement | null>(null);
-  const { setToast } = useToast();
   const intervalIdRef = useRef<ReturnType<typeof setInterval> | undefined>(
     undefined,
   );

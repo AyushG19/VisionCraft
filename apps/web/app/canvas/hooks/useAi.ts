@@ -4,15 +4,12 @@ import {
   getAiResponse,
   getExcalidrawElements,
 } from "../../services/ai.service";
-import { AIResultType } from "@workspace/ui/lib/convertToShapeType";
+import { AIResultType } from "@repo/ui/lib/convertToShapeType";
 import { useToast } from "@repo/hooks";
 
-import { convertAllElements } from "../utils/elementsConverter";
-import { Action } from "../types";
 import { Camera } from "./useCamera";
-import { createDraggedGroup } from "../utils/createTempShapeHelper";
 import { DrawElement, QueryType } from "@repo/common";
-import { ExcalidrawElementSkeleton } from "@workspace/ui/components/types";
+import { ExcalidrawElementSkeleton } from "@repo/ui/components/types";
 
 const useAi = (
   selectedElementRef: React.RefObject<DrawElement[]>,

@@ -3,7 +3,6 @@ import {
   getBoundsForHandles,
   getGroupOutlineBounds,
   getOutlineBounds,
-  ShapeBounds,
 } from "../utils/getBoundsHelpers";
 import { HandleName } from "../../lib/getHandles";
 import {
@@ -11,14 +10,9 @@ import {
   isInsideSelectBound,
   isPointInHandle,
 } from "../utils/isPointInShape";
-import {
-  getCursorSvg,
-  getEraserSvg,
-  getPencilSvg,
-} from "../utils/getCustonSvg";
 import { CROSSHAIR_TOOLS, HANDLE_CURSORS } from "../utils/handleCursor";
 
-export const updateCursor = (
+export const updateCursor = async (
   canvas: HTMLCanvasElement,
   tool: AllToolTypes,
   worldPos: { x: number; y: number },
@@ -30,7 +24,9 @@ export const updateCursor = (
   isResizing: boolean,
 ) => {
   if (!canvas) return;
-
+  const { getCursorSvg, getEraserSvg, getPencilSvg } = await import(
+    "../utils/getCustonSvg"
+  );
   if (isPanning) {
     canvas.style.cursor = "grabbing";
     return;
