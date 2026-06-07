@@ -3,7 +3,7 @@ import oklchToCSS from "../../lib/oklchToCss";
 import { Point } from "motion";
 
 export const drawSmoothPencilPath = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   points: readonly Point[],
   startPos: PointType,
   width: number,
@@ -50,7 +50,7 @@ export const drawSmoothPencilPath = (
 };
 
 export const drawEnhancedArrow = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   points: readonly PointType[],
   startPos: PointType,
   fillColor?: ColorType | null,
@@ -103,7 +103,7 @@ export const drawEnhancedArrow = (
 };
 
 export const drawRoundedRhombus = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   x: number,
   y: number,
   width: number,
@@ -127,7 +127,7 @@ export const drawRoundedRhombus = (
   // The radius can safely be at most 25% of the shortest side.
   // If we exceed this, arcTo() will glitch and turn inside out.
   const maxSafeRadius = Math.min(width, height) * 0.25;
-  const activeRadius = Math.min(radius, maxSafeRadius); // Clamp it
+  const activeRadius = Math.min(radius, maxSafeRadius); // Clamp
 
   const activeLineWidth = isSelectionUI ? 2 / zoom : 2;
 
@@ -146,7 +146,7 @@ export const drawRoundedRhombus = (
   ctx.closePath();
 
   ctx.lineWidth = activeLineWidth;
-  ctx.lineJoin = "round"; // Hides sharp glitches if they somehow happen
+  ctx.lineJoin = "round";
   ctx.stroke();
   ctx.restore();
 };

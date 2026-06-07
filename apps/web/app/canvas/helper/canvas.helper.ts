@@ -1,5 +1,5 @@
 export const measureText = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   text: string,
   fontSize: number,
   fontFamily: string,

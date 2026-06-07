@@ -65,6 +65,7 @@ type toolkitProps = {
   handleUndo: () => void;
   handleRedo: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  toolkitRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const Toolkit = ({
@@ -74,8 +75,9 @@ const Toolkit = ({
   handleUndo,
   handleRedo,
   inputRef,
+  toolkitRef,
 }: toolkitProps) => {
-  const toolkitRef = useRef<HTMLDivElement | null>(null);
+  // const toolkitRef = useRef<HTMLDivElement | null>(null);
   const toolIconRef = useRef<HTMLDivElement | null>(null);
   const resizeRef = useRef<any | null>(null);
   const posRef = useRef({ x: 0, y: 0 });

@@ -18,6 +18,7 @@ type Props = {
   isChatOpen: boolean;
   clearCanvas: () => void;
   setTheme: (t: string) => void;
+  exportCanvas: () => void;
   // preloadChat: () => void;
 };
 
@@ -49,6 +50,7 @@ export default function JoinRoomModal({
   onLogout,
   isChatOpen,
   setTheme,
+  exportCanvas,
   clearCanvas,
   // preloadChat,
 }: Props) {
@@ -99,6 +101,10 @@ export default function JoinRoomModal({
         "ai-chat": onChatToggle,
         "exit-room": onExitRoom,
         "clear-canvas": clearCanvas,
+        export: exportCanvas,
+        auth: () => {
+          window.location.href = `/`;
+        },
         // commands: showCommands,
         github: () => {
           window.open("https://github.com/AyushG19/VisionCraft.git", "_blank");

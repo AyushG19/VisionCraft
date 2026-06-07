@@ -144,7 +144,8 @@ export function useCamera(
         const cursorY = e.clientY - rect.top;
 
         updateCamera((prev) => {
-          const delta = -e.deltaY * 0.001;
+          // const delta = -e.deltaY * 0.0001;
+          const delta = e.deltaY < 0 ? 0.1 : -0.1;
           const newZ = Math.min(Math.max(prev.z + delta, MIN_ZOOM), MAX_ZOOM);
           return {
             x: cursorX - ((cursorX - prev.x) / prev.z) * newZ,

@@ -3,7 +3,7 @@ import { Bounds, getHandles, Handle } from "../../lib/getHandles";
 
 /** helper for label drawing */
 export function drawLabel(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   startPos: PointType,
   label: Labeltype,
   maxWidth: number,
@@ -14,9 +14,8 @@ export function drawLabel(
   ctx.fillText(label.text, startPos.x, startPos.y);
 }
 
-/** Draw all handles */
 export const drawHandles = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   bounds: Bounds,
   handleSize: number = 6,
   zoom: number,
@@ -35,9 +34,9 @@ export const drawHandles = (
   return handles;
 };
 
-/** Helper function to create rounded rectangle path */
+// Helper function to create rounded rectangle path
 export const createRoundedRectPath = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   x: number,
   y: number,
   width: number,

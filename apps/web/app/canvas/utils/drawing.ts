@@ -11,12 +11,6 @@ import { measureText } from "../helper/canvas.helper";
 import { ShapeBounds } from "./getBoundsHelpers";
 import { getImage, setImage } from "./imageCache";
 
-// Type definitions for better type safety
-interface Point {
-  x: number;
-  y: number;
-}
-
 interface ColorType {
   // Define the structure of your color type based on your actual implementation
   l: number;
@@ -26,7 +20,7 @@ interface ColorType {
 }
 
 export const drawGroupBoundingBox = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   bounds: { x: number; y: number; width: number; height: number },
   cam: Camera,
 ) => {
@@ -38,14 +32,6 @@ export const drawGroupBoundingBox = (
   ctx.restore();
 };
 
-const hasPoints = (
-  shape: DrawElement,
-): shape is DrawElement & { points: Point[] } => {
-  return (
-    "points" in shape && Array.isArray(shape.points) && shape.points.length > 0
-  );
-};
-
 // Type guard to check if shape has fill color
 const hasFillColor = (
   shape: DrawElement,
@@ -53,21 +39,8 @@ const hasFillColor = (
   return "fillColor" in shape && shape.fillColor != null;
 };
 
-// Typ
-const hasLineWidth = (
-  shape: DrawElement,
-): shape is DrawElement & { lineWidth: number } => {
-  return "lineWidth" in shape && typeof shape.lineWidth === "number";
-};
-
-const hasContent = (
-  shape: DrawElement,
-): shape is DrawElement & { content: string } => {
-  return "content" in shape && typeof shape.content === "string";
-};
-
 const handleStrokeType = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: DrawElement,
   zoom: number = 1,
 ) => {
@@ -93,7 +66,7 @@ const handleStrokeType = (
 };
 // Highlight selected shape (outline + handles)
 export const highlightShape = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   bounds: ShapeBounds,
   zoom: number,
   highlightColor: string,
@@ -137,7 +110,10 @@ export const highlightShape = (
   ctx.restore();
 };
 
-function drawText(ctx: CanvasRenderingContext2D, el: TextType) {
+function drawText(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  el: TextType,
+) {
   // ctx.save();
 
   ctx.font = `${el.fontSize}px ${el.fontFamily}`;
@@ -150,7 +126,7 @@ function drawText(ctx: CanvasRenderingContext2D, el: TextType) {
 
 //Draw line function
 function drawLine(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   startPos: PointType,
   points: readonly PointType[],
 ) {
@@ -167,7 +143,7 @@ function drawLine(
 }
 // Main draw function
 export const drawShape = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: DrawElement,
   camera: Camera,
   multiselect: boolean,
@@ -361,7 +337,7 @@ export const drawShape = (
 };
 
 export const drawImageShape = (
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: ImageType,
   onLoad?: () => void, // triggers re-render after bitmap loads
 ) => {

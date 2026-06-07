@@ -16,7 +16,7 @@ export const updateCursor = async (
   canvas: HTMLCanvasElement,
   tool: AllToolTypes,
   worldPos: { x: number; y: number },
-  selectedElementsRef: React.RefObject<DrawElement[]>, // ← array
+  selectedElementsRef: React.RefObject<DrawElement[]>,
   allShapes: DrawElement[],
   isPanning: boolean,
   spaceHeld: boolean,
@@ -63,8 +63,7 @@ export const updateCursor = async (
               return;
             }
           } else if (handleBounds.type === "points") {
-            // point handles (line/arrow/pencil) — endpoint dots
-            // no resize cursor, just move when hovering near endpoints
+            // point handles (line/arrow/pencil) endpoint dots no resize cursor, just move when hovering near endpoints
             for (const point of handleBounds.points) {
               const dist = Math.hypot(
                 worldPos.x - point.x,
@@ -88,7 +87,6 @@ export const updateCursor = async (
     }
 
     if (selected.length > 1) {
-      // multi select — check group bounding box body only
       // handles not shown for multi select
       const groupBounds = getGroupOutlineBounds(selected);
       if (groupBounds && isInsideSelectBound(worldPos, groupBounds)) {
@@ -97,7 +95,7 @@ export const updateCursor = async (
       }
     }
 
-    // not hovering over selection — check all shapes
+    // not hovering over selection check all shapes
     const hoveredShape = allShapes.find(
       (s) => !s.isDeleted && isClickOnShape(worldPos, s),
     );

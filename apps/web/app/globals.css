@@ -320,18 +320,7 @@
   --canvas-contrast: #a6f2ff;
   --red: #920004;
 }
-/*Cultured
-  #F6F4F5
-  Malted
-  Milk
-  Sunspark
-  Red
-  Clay
-  Witch
-  Soup
-  #692746
-  Cultist
-  Robe*/
+
 @theme {
   --shadow-primary: 5px 5px 0px black;
   --shadow-pressed: 3px 3px 0px black;
@@ -345,7 +334,7 @@
     inset 2px 2px 3px var(--color-secondary-700),
     5px 5px var(--color-global-shadow);
 
-  --shadow-shinyshadow-pressed: inset 1px 1px var(--color-global-shadow);
+  --shadow-shinyshadow-pressed: inset 2px 2px var(--color-global-shadow);
 
   --font-google-sans-code: "Google Sans Code", ui-monospace, monospace;
   --font-krona-one: "Krona One", sans-serif;

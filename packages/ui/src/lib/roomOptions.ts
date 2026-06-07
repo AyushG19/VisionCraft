@@ -71,13 +71,6 @@ export const ROOM_OPTION_SECTIONS = [
         mode: "both",
         icon: IconPhotoUp,
       },
-
-      {
-        id: "commands",
-        label: "View Commands",
-        mode: "both",
-        icon: IconTerminal2,
-      },
     ],
   },
   {
@@ -118,7 +111,6 @@ export type OptionId =
   | "themes"
   | "clear-canvas"
   | "export"
-  | "commands"
   | "auth"
   | "github"
   | "x";
