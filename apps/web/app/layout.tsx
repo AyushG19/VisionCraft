@@ -25,11 +25,17 @@ const handlee = Handlee({
 });
 
 export const metadata: Metadata = {
-  title: { default: "VisionCraft", template: "%S | VisionCraft" },
+  title: { default: "Visioncraft", template: "%s | Visioncraft" },
   description:
     "Realtime AI-powered collaborative drawing and diagramming platform.",
   icons: {
     icon: "/favicon.ico",
+  },
+  openGraph: {
+    title: "Visioncraft",
+    description:
+      "Realtime AI-powered collaborative drawing and diagramming platform.",
+    images: ["/og-image.png"],
   },
 };
 
